@@ -16,7 +16,7 @@
     <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap justify-between items-center gap-3">
       <div class="flex items-center gap-2">
         <span class="text-xl font-bold tracking-wide">印尼移工管家 (IndoWorker Pro)</span>
-        <span class="text-xs bg-indigo-700 px-2.5 py-0.5 rounded-full text-indigo-100">視覺點陣版</span>
+        <span class="text-xs bg-indigo-700 px-2.5 py-0.5 rounded-full text-indigo-100">跨年度擴充版</span>
       </div>
       <div class="flex items-center gap-2">
         <button onclick="exportCSV()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-3 py-1.5 rounded shadow">
@@ -75,13 +75,12 @@
           <svg class="w-4 h-4 text-slate-400 absolute left-2.5 top-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
         </div>
 
-        <!-- 年份切換與燈號圖例說明 -->
+        <!-- 直覺化跨年度切換器 (支援 2028, 2029 及無限往後) -->
         <div class="flex flex-wrap items-center gap-4">
-          <div class="flex items-center gap-1.5 bg-slate-100 p-1 rounded-lg">
-            <span class="text-xs text-slate-500 font-medium px-2">收費年份：</span>
-            <button onclick="changeDisplayYear(2025)" id="yearBtn2025" class="px-2.5 py-1 text-xs font-semibold rounded text-slate-600">2025</button>
-            <button onclick="changeDisplayYear(2026)" id="yearBtn2026" class="px-2.5 py-1 text-xs font-semibold rounded bg-indigo-600 text-white shadow-sm">2026</button>
-            <button onclick="changeDisplayYear(2027)" id="yearBtn2027" class="px-2.5 py-1 text-xs font-semibold rounded text-slate-600">2027</button>
+          <div class="flex items-center gap-1 bg-slate-100 p-1 rounded-lg border border-slate-200">
+            <button onclick="shiftYear(-1)" title="上一年" class="w-6 h-6 flex items-center justify-center rounded bg-white hover:bg-slate-200 text-slate-600 shadow-sm text-xs font-bold transition">◀</button>
+            <select id="yearSelect" onchange="changeDisplayYear(Number(this.value))" class="bg-transparent text-xs font-bold text-indigo-700 px-2 py-0.5 rounded cursor-pointer focus:outline-none"></select>
+            <button onclick="shiftYear(1)" title="下一年" class="w-6 h-6 flex items-center justify-center rounded bg-white hover:bg-slate-200 text-slate-600 shadow-sm text-xs font-bold transition">▶</button>
           </div>
 
           <!-- 圓點圖例說明 -->
@@ -107,7 +106,7 @@
               <th class="p-3">聘僱到期日</th>
               <th class="p-3">護照到期日</th>
               <th class="p-3 text-center min-w-[280px]">
-                <span id="currentYearDisplayLabel">2026</span> 年收款狀態 (1~12月)
+                <span id="currentYearDisplayLabel" class="text-indigo-700 font-bold">2026</span> 年收款狀態 (1~12月)
               </th>
               <th class="p-3 text-center w-28">操作</th>
             </tr>
@@ -216,10 +215,9 @@
           </div>
         </div>
 
-        <!-- 雇主地址 -->
         <div>
           <label class="block font-medium mb-1">雇主聯絡地址</label>
-          <input type="text" id="wAddress" placeholder="例: 新北市汐止區大同路二段..." class="w-full border rounded px-2.5 py-1.5 focus:outline-indigo-500">
+          <input type="text" id="wAddress" placeholder="例: 新北市汐止區大同路二段123號" class="w-full border rounded px-2.5 py-1.5 focus:outline-indigo-500">
         </div>
 
         <div class="grid grid-cols-2 gap-3">
@@ -316,26 +314,54 @@
 
     let workers = JSON.parse(localStorage.getItem('indo_workers_db')) || DEFAULT_DATA;
     let billingHistory = JSON.parse(localStorage.getItem('indo_billing_db')) || {};
-    let displayYear = 2026;
+    
+    // 預設年份自動抓當前年 (2026)
+    const currentYear = new Date().getFullYear();
+    let displayYear = currentYear;
     let activeWorkerForMulti = null;
 
-    function saveToStorage() {
-      localStorage.setItem('indo_workers_db', JSON.stringify(workers));
-      localStorage.setItem('indo_billing_db', JSON.stringify(billingHistory));
+    // 初始化年份選單（自動產生 前2年 到 後6年，涵蓋 2024 ~ 2032）
+    function initYearSelector() {
+      const select = document.getElementById('yearSelect');
+      select.innerHTML = '';
+      const startYear = currentYear - 2;
+      const endYear = currentYear + 6;
+
+      for (let y = startYear; y <= endYear; y++) {
+        const opt = document.createElement('option');
+        opt.value = y;
+        opt.innerText = `${y} 年`;
+        if (y === displayYear) opt.selected = true;
+        select.appendChild(opt);
+      }
     }
 
     function changeDisplayYear(year) {
       displayYear = year;
       document.getElementById('currentYearDisplayLabel').innerText = year;
-      [2025, 2026, 2027].forEach(y => {
-        const btn = document.getElementById(`yearBtn${y}`);
-        if (y === year) {
-          btn.className = "px-2.5 py-1 text-xs font-semibold rounded bg-indigo-600 text-white shadow-sm";
-        } else {
-          btn.className = "px-2.5 py-1 text-xs font-semibold rounded text-slate-600 hover:bg-slate-200";
-        }
-      });
+      document.getElementById('yearSelect').value = year;
       renderTable();
+    }
+
+    // 點擊 ◀ 或 ▶ 箭頭切換年份
+    function shiftYear(offset) {
+      const newYear = displayYear + offset;
+      const select = document.getElementById('yearSelect');
+      
+      // 若超出目前選單範圍，動態補上該年份選項
+      if (![...select.options].some(o => Number(o.value) === newYear)) {
+        const opt = document.createElement('option');
+        opt.value = newYear;
+        opt.innerText = `${newYear} 年`;
+        if (offset > 0) select.appendChild(opt);
+        else select.insertBefore(opt, select.firstChild);
+      }
+      changeDisplayYear(newYear);
+    }
+
+    function saveToStorage() {
+      localStorage.setItem('indo_workers_db', JSON.stringify(workers));
+      localStorage.setItem('indo_billing_db', JSON.stringify(billingHistory));
     }
 
     function getMonthsInTaiwanAtMonth(arrivalDateStr, targetYearMonthStr) {
@@ -711,6 +737,8 @@
       document.body.removeChild(link);
     }
 
+    // 啟動初始化
+    initYearSelector();
     renderTable();
   </script>
 </body>
