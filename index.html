@@ -106,9 +106,10 @@
             <button onclick="shiftYear(1)" title="下一年" class="w-6 h-6 flex items-center justify-center rounded bg-white hover:bg-slate-200 text-slate-600 shadow-sm text-xs font-bold transition">▶</button>
           </div>
 
-          <div class="flex items-center gap-3 text-[11px] text-slate-500">
+<div class="flex items-center gap-3 text-[11px] text-slate-500">
             <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-slate-300 inline-block"></span> 灰：未起聘</span>
             <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-rose-500 inline-block"></span> 紅：應收</span>
+            <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-amber-400 inline-block border border-amber-500"></span> 黃：新客戶加收月</span>
             <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block"></span> 綠：已收</span>
             <span class="flex items-center gap-1 font-semibold text-indigo-700">🩺 含健檢或規費</span>
           </div>
@@ -501,7 +502,7 @@
           </div>
         </div>
 
-        <div class="bg-amber-50 p-3 rounded-lg border border-amber-200 space-y-2">
+<div class="bg-amber-50 p-3 rounded-lg border border-amber-200 space-y-2">
           <span class="font-bold text-amber-900 block">⭐ 服務費費率設定 (同一外勞重聘/在台年資)</span>
           <div class="grid grid-cols-2 gap-3">
             <div>
@@ -512,11 +513,17 @@
                 <option value="CUSTOM_MONTHS">自訂累計在台年資 (接續舊年資計算)</option>
               </select>
             </div>
- <div id="customMonthsGroup">
-  <label class="block font-medium text-amber-800 mb-1">承接前在台已累計月數 (若滿1年選1700，此處填累計月數)</label>
-  <input type="number" id="wPriorMonths" value="0" min="0" max="144" placeholder="例如填 17" class="w-full border border-amber-300 rounded px-2 py-1.5 bg-white focus:outline-amber-500">
-  <span class="text-[10px] text-amber-700 block mt-0.5">※ 如填 17，新雇主承接後前 7 個月收 $1,700，滿 24 個月後自動降為 $1,500</span>
-</div>
+            <div id="customMonthsGroup">
+              <label class="block font-medium text-amber-800 mb-1">承接前在台已累計月數 (若滿1年選1700，此處填累計月數)</label>
+              <input type="number" id="wPriorMonths" value="0" min="0" max="144" class="w-full border border-amber-300 rounded px-2 py-1.5 bg-white focus:outline-amber-500">
+            </div>
+          </div>
+          <!-- 新加入的新客戶額外服務費選項 -->
+          <div class="pt-2 border-t border-amber-200">
+            <label class="flex items-center gap-1.5 cursor-pointer font-bold text-amber-900">
+              <input type="checkbox" id="wExtraCustomerFee" class="rounded text-amber-600 focus:ring-amber-500">
+              <span>新客戶額外服務費（第 12、24 個月各加收 $2,000，該月顯示黃點）</span>
+            </label>
           </div>
         </div>
 
@@ -815,10 +822,32 @@ function getContractMonthIndex(worker, year, month) {
         arcFee = Number(worker.firstMonthArc !== undefined ? worker.firstMonthArc : 3030);
       }
 
-      const total = serviceFee + medicalFee + arcFee;
+     // 4. 新客戶額外服務費：第 12 個月、第 24 個月各加收 $2,000
+      let extraCustomerFee = 0;
+      let isExtraCustomerMonth = false;
+      if (worker.hasExtraCustomerFee && (contractMonth === 12 || contractMonth === 24)) {
+        extraCustomerFee = 2000;
+        isExtraCustomerMonth = true;
+      }
+
+      const total = serviceFee + medicalFee + arcFee + extraCustomerFee;
       let details = [`服務費: $${serviceFee}`];
+      if (extraCustomerFee > 0) details.push(`新客戶服務費: $2,000`);
       if (medicalFee > 0) details.push(medicalNote);
       if (arcFee > 0) details.push(`居留證: $${arcFee}`);
+
+      return {
+        total: total,
+        serviceFee: serviceFee,
+        medicalFee: medicalFee,
+        arcFee: arcFee,
+        extraCustomerFee: extraCustomerFee,
+        isExtraCustomerMonth: isExtraCustomerMonth, // 標記是否為黃點月份
+        hasExtra: (medicalFee > 0 || arcFee > 0 || extraCustomerFee > 0),
+        detailText: details.join(' + ') + ` = 共 $${total}`,
+        contractMonth: contractMonth,
+        isActive: true
+      };
 
       return {
         total: total,
@@ -925,17 +954,22 @@ if (isMissingPassport) {
           let colorClass = "";
           let title = "";
 
-          if (!feeInfo.isActive) {
+        if (!feeInfo.isActive) {
             colorClass = "bg-slate-200 border-slate-300 text-slate-400 cursor-not-allowed";
             title = `${rocLabel}：尚未入境/起聘`;
           } else if (isPaid) {
+            // 已收款一律為綠色
             colorClass = "bg-emerald-500 border-emerald-600 text-white cursor-pointer hover:scale-110 shadow-sm";
             title = `${rocLabel} (第${feeInfo.contractMonth}個月) [已收款]\n明細：${feeInfo.detailText}\n(點擊可改為未收)`;
+          } else if (feeInfo.isExtraCustomerMonth) {
+            // ★ 新客戶第 12、24 個月加收 $2,000：未收時顯示亮黃色
+            colorClass = "bg-amber-400 border-amber-500 text-amber-950 font-bold cursor-pointer hover:scale-110 shadow-md ring-2 ring-amber-300";
+            title = `${rocLabel} (第${feeInfo.contractMonth}個月) [★新客戶加收月★]\n明細：${feeInfo.detailText}\n(點擊直接標記已收)`;
           } else {
+            // 一般待收為紅色
             colorClass = "bg-rose-500 border-rose-600 text-white cursor-pointer hover:scale-110 shadow-sm";
             title = `${rocLabel} (第${feeInfo.contractMonth}個月) [應收待繳]\n明細：${feeInfo.detailText}\n(點擊直接標記已收)`;
           }
-
           dotsHtml += `
             <button 
               type="button"
@@ -1385,6 +1419,8 @@ function openModal(isEdit = false) {
     document.getElementById('wFeeMode').value = "NORMAL";
     document.getElementById('wFirstMonthMedical').value = "0";
     document.getElementById('wFirstMonthArc').value = "3030";
+    // ★ 加上這行：每次點「新增案件」時預設不勾選
+    document.getElementById('wExtraCustomerFee').checked = false;
     document.getElementById('modalTitle').innerText = "新增移工案件";
     
     // 入境日與承接日維持民國年 (最後一個參數是 false)
@@ -1459,7 +1495,7 @@ function openModal(isEdit = false) {
       const id = document.getElementById('editId').value || String(Date.now());
       const existing = workers.find(w => w.id === id);
 
-      const workerObj = {
+ const workerObj = {
         id: id,
         status: existing ? (existing.status || 'ACTIVE') : 'ACTIVE',
         code: document.getElementById('wCode').value.trim(),
@@ -1472,11 +1508,13 @@ function openModal(isEdit = false) {
         arrivalDate: getRocDateValue('rocGroup_wArrivalDate'),
         transferDate: getRocDateValue('rocGroup_wTransferDate'),
         feeMode: document.getElementById('wFeeMode').value,
+        // ★ 加上這行：儲存是否勾選了新客戶額外服務費
+        hasExtraCustomerFee: document.getElementById('wExtraCustomerFee').checked,
         priorMonths: Number(document.getElementById('wPriorMonths').value || 0),
         firstMonthMedical: Number(document.getElementById('wFirstMonthMedical').value || 0),
         firstMonthArc: Number(document.getElementById('wFirstMonthArc').value || 0),
         contractExpiry: getRocDateValue('rocGroup_wContractExpiry'),
-        passportExpiry: getRocDateValue('rocGroup_wPassportExpiry'), // 若選未知則為 ''
+        passportExpiry: getRocDateValue('rocGroup_wPassportExpiry'),
         paymentMethod: document.getElementById('wPaymentMethod').value,
         notes: document.getElementById('wNotes').value.trim(),
       };
@@ -1513,8 +1551,10 @@ function openModal(isEdit = false) {
   // 護照到期日為西元年 (最後參數設為 true)
   setupRocDatePicker('rocGroup_wPassportExpiry', w.passportExpiry || '', true, true);
 
-  document.getElementById('wFeeMode').value = w.feeMode || 'NORMAL';
-  document.getElementById('wPriorMonths').value = w.priorMonths || 0;
+document.getElementById('wFeeMode').value = w.feeMode || 'NORMAL';
+      // ★ 加上這行：如果是編輯舊資料，自動打勾或取消打勾
+      document.getElementById('wExtraCustomerFee').checked = !!w.hasExtraCustomerFee;
+      document.getElementById('wPriorMonths').value = w.priorMonths || 0;
   document.getElementById('wFirstMonthMedical').value = w.firstMonthMedical !== undefined ? w.firstMonthMedical : 0;
   document.getElementById('wFirstMonthArc').value = w.firstMonthArc !== undefined ? w.firstMonthArc : 3030;
   document.getElementById('wPaymentMethod').value = w.paymentMethod;
