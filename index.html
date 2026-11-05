@@ -190,6 +190,42 @@
     </div>
 
   </main>
+  <!-- 原雇主原移工期滿續聘 Modal -->
+<div id="renewContractModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+  <div class="bg-white rounded-xl shadow-xl max-w-sm w-full overflow-hidden">
+    <div class="bg-emerald-700 text-white px-5 py-3 flex justify-between items-center">
+      <h3 class="text-sm font-semibold">原雇主・原移工期滿續聘</h3>
+      <button onclick="closeRenewContractModal()" class="text-emerald-100 hover:text-white text-lg">&times;</button>
+    </div>
+    <form onsubmit="confirmRenewContract(event)" class="p-5 space-y-3.5 text-xs">
+      <input type="hidden" id="renewContractWorkerId">
+      <div>
+        <label class="block text-slate-500 mb-0.5">移工姓名 / 雇主</label>
+        <p id="renewContractTitle" class="font-bold text-slate-800 text-sm"></p>
+      </div>
+      <div>
+        <label class="block text-slate-500 mb-0.5">原聘約到期日</label>
+        <p id="renewContractOldExpiry" class="text-slate-600 font-mono"></p>
+      </div>
+      <div>
+        <label class="block font-medium mb-1">新合約續聘起聘日 (民國) *</label>
+        <div id="rocGroup_renewStartDate" class="flex gap-1"></div>
+        <span class="text-[10px] text-slate-400">系統自動接續在原到期日次日</span>
+      </div>
+      <div>
+        <label class="block font-medium mb-1">新合約期滿到期日 (民國，通常為3年) *</label>
+        <div id="rocGroup_renewEndExpiry" class="flex gap-1"></div>
+      </div>
+      <div class="bg-emerald-50 border border-emerald-200 rounded p-2 text-emerald-800 text-[11px]">
+        ✓ 續聘確認後，服務費會自動鎖定為每個月 <strong>$1,500</strong>，並依新起聘日自動排程新一輪定期健檢（第 6、18、30 個月）。
+      </div>
+      <div class="pt-2 flex justify-end gap-2 border-t border-slate-100">
+        <button type="button" onclick="closeRenewContractModal()" class="px-3 py-1.5 rounded border border-slate-300 text-slate-600">取消</button>
+        <button type="submit" class="px-4 py-1.5 rounded bg-emerald-700 hover:bg-emerald-800 text-white font-medium">確認辦理續聘</button>
+      </div>
+    </form>
+  </div>
+</div>
 
   <!-- 辦理轉出 Modal 彈窗 -->
   <div id="transferOutModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
@@ -923,10 +959,11 @@
           <td class="p-3 font-mono">${contBadge}</td>
           <td class="p-3 font-mono">${passBadge}</td>
           <td class="p-3 text-center">${dotsHtml}</td>
-          <td class="p-3 text-center space-x-1">
-            <button onclick="openTransferOutModal('${w.id}')" title="被照顧人往生或解約轉出" class="bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-300 px-1.5 py-0.5 rounded text-[11px] font-medium">辦轉出</button>
-            <button onclick="openReturnModal('${w.id}')" title="三年期滿或解約搭機回國" class="bg-slate-100 hover:bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded text-[11px]">回國</button>
-          </td>
+         <td class="p-3 text-center space-x-1">
+  <button onclick="openRenewContractModal('${w.id}')" title="原雇主原外勞期滿續聘" class="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-300 px-1.5 py-0.5 rounded text-[11px] font-bold">續聘</button>
+  <button onclick="openTransferOutModal('${w.id}')" title="被照顧人往生或解約轉出" class="bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-300 px-1.5 py-0.5 rounded text-[11px] font-medium">辦轉出</button>
+  <button onclick="openReturnModal('${w.id}')" title="三年期滿或解約搭機回國" class="bg-slate-100 hover:bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded text-[11px]">回國</button>
+</td>
           <td class="p-3 text-center space-x-1">
             <button onclick="editWorker('${w.id}')" class="text-indigo-600 hover:text-indigo-900 font-medium">編輯</button>
             <button onclick="deleteWorker('${w.id}')" class="text-rose-500 hover:text-rose-800 font-medium">刪除</button>
@@ -1487,6 +1524,70 @@
 
     initYearSelector();
     renderActiveTable();
+    // ====== 以下為新加入的「期滿續聘」函數 ======
+
+    // 打開續聘彈窗
+    function openRenewContractModal(workerId) {
+      const w = workers.find(item => item.id === workerId);
+      if (!w) return;
+      document.getElementById('renewContractWorkerId').value = w.id;
+      document.getElementById('renewContractTitle').innerText = `${w.name} (${w.code}) ｜ 雇主: ${w.employer}`;
+      document.getElementById('renewContractOldExpiry').innerText = `民國 ${toRocDateString(w.contractExpiry)}`;
+
+      // 計算續聘新起聘日 (原到期日隔天)
+      let newStartStr = '';
+      let newEndStr = '';
+      if (w.contractExpiry) {
+        const oldExp = new Date(w.contractExpiry);
+        const newStart = new Date(oldExp);
+        newStart.setDate(newStart.getDate() + 1);
+        newStartStr = newStart.toISOString().slice(0, 10);
+
+        const newEnd = new Date(newStart);
+        newEnd.setFullYear(newEnd.getFullYear() + 3);
+        newEnd.setDate(newEnd.getDate() - 1);
+        newEndStr = newEnd.toISOString().slice(0, 10);
+      }
+
+      setupRocDatePicker('rocGroup_renewStartDate', newStartStr, false);
+      setupRocDatePicker('rocGroup_renewEndExpiry', newEndStr, false);
+      document.getElementById('renewContractModal').classList.remove('hidden');
+    }
+
+    function closeRenewContractModal() {
+      document.getElementById('renewContractModal').classList.add('hidden');
+    }
+
+    // 確認續聘儲存
+    function confirmRenewContract(e) {
+      e.preventDefault();
+      const id = document.getElementById('renewContractWorkerId').value;
+      const w = workers.find(item => item.id === id);
+      if (w) {
+        const newStartDate = getRocDateValue('rocGroup_renewStartDate');
+        const newEndDate = getRocDateValue('rocGroup_renewEndExpiry');
+
+        // 1. 更新新一輪起聘與到期日
+        w.arrivalDate = newStartDate;      // 新合約以此日起聘計算新一輪第6、18、30個月健檢
+        w.contractExpiry = newEndDate;    // 新合約3年到期日
+        w.transferDate = '';              // 原雇主續聘非轉出承接
+
+        // 2. 服務費自動鎖定為 1500 (滿3年續聘固定1500)
+        w.feeMode = 'FIXED_1500';
+        w.firstMonthMedical = 0;          // 續聘第1個月無須再繳入國初檢2500
+
+        // 3. 備註紀錄
+        w.notes = (w.notes ? w.notes + "；" : "") + `於民國 ${toRocDateString(newStartDate)} 與原雇主續聘3年(至 ${toRocDateString(newEndDate)})`;
+
+        saveToStorage();
+        closeRenewContractModal();
+        renderActiveTable();
+        alert(`續聘手續完成！${w.name} 與雇主 ${w.employer} 的聘期已展延至民國 ${toRocDateString(newEndDate)}，每月服務費已固定設為 $1,500。`);
+      }
+    }
+  </script>
+</body>
+</html>
   </script>
 </body>
 </html>
