@@ -895,21 +895,31 @@
       return Math.round((target - now) / (1000 * 60 * 60 * 24));
     }
 
-    function getContractMonthIndex(worker, year, month) {
-      const effectiveDateStr = worker.type === '承接' && worker.transferDate ? worker.transferDate : worker.arrivalDate;
-      if (!effectiveDateStr) return -1;
-      
-      const start = new Date(effectiveDateStr);
-      const firstBillDate = new Date(start);
-      firstBillDate.setMonth(firstBillDate.getMonth() + 1);
+   function getContractMonthIndex(worker, year, month) {
+  // 基準日起算點：承接案以承接日、一般案以首次入境日起算
+  const effectiveDateStr = worker.type === '承接' && worker.transferDate ? worker.transferDate : worker.arrivalDate;
+  if (!effectiveDateStr) return -1;
+  
+  const start = new Date(effectiveDateStr);
+  const firstBillDate = new Date(start);
+  firstBillDate.setMonth(firstBillDate.getMonth() + 1); // 滿月後次月為第一期
 
-      const targetDate = new Date(year, month - 1, 1);
-      const firstBillMonthDate = new Date(firstBillDate.getFullYear(), firstBillDate.getMonth(), 1);
+  const targetDate = new Date(year, month - 1, 1);
+  const firstBillMonthDate = new Date(firstBillDate.getFullYear(), firstBillDate.getMonth(), 1);
 
-      if (targetDate < firstBillMonthDate) return -1;
+  // 1. 若早於第一期收費月，代表尚未做滿一個月 (灰色免收)
+  if (targetDate < firstBillMonthDate) return -1;
 
-      return (targetDate.getFullYear() - firstBillMonthDate.getFullYear()) * 12 + (targetDate.getMonth() - firstBillMonthDate.getMonth()) + 1;
-    }
+  // 2. 若有設定聘僱許可到期日，且檢視月份已超過最新到期日，才變灰
+  if (worker.contractExpiry) {
+    const expDate = new Date(worker.contractExpiry);
+    const expMonthDate = new Date(expDate.getFullYear(), expDate.getMonth() + 1, 1);
+    if (targetDate >= expMonthDate) return -1; // 超過聘約效期才變灰
+  }
+
+  // 3. 回傳累計在台月份 (正常連續計算 1, 2, 3... 36, 37... 72 月)
+  return (targetDate.getFullYear() - firstBillMonthDate.getFullYear()) * 12 + (targetDate.getMonth() - firstBillMonthDate.getMonth()) + 1;
+}
 
     function calculateDetailedFee(worker, year, month) {
       const contractMonth = getContractMonthIndex(worker, year, month);
@@ -1613,7 +1623,7 @@
       document.getElementById('renewContractModal').classList.add('hidden');
     }
 
-   function confirmRenewContract(e) {
+ function confirmRenewContract(e) {
   e.preventDefault();
   const id = document.getElementById('renewContractWorkerId').value;
   const w = workers.find(item => item.id === id);
@@ -1621,22 +1631,23 @@
     const newStartDate = getRocDateValue('rocGroup_renewStartDate');
     const newEndDate = getRocDateValue('rocGroup_renewEndExpiry');
 
-    // ★★★ 關鍵修正：絕不覆蓋 arrivalDate，確保原合約 112~115 年的收款圓點不變灰 ★★★
-    // 僅更新新聘僱到期日
-    w.contractExpiry = newEndDate;
-    w.transferDate = ''; // 原雇主續聘非承接
+    // ★★★ 核心保護：保留原本真正的首次入境日 (如 112/12/11)，絕不改寫 w.arrivalDate ★★★
+    // 另外記錄續聘生效日
+    w.renewStartDate = newStartDate;   // 續聘起聘日 (115/12/11)
+    w.contractExpiry = newEndDate;     // 新聘約到期日 (118/12/11)
+    w.transferDate = '';               // 原雇主續聘，非國內承接
 
-    // 滿 3 年續聘，服務費費率自動切換為固定 $1,500
+    // 續聘後自動鎖定為固定 1500 級距，並免除初檢費
     w.feeMode = 'FIXED_1500';
-    w.firstMonthMedical = 0; // 續聘免初檢費
+    w.firstMonthMedical = 0;
 
-    // 紀錄續聘備註
-    w.notes = (w.notes ? w.notes + "；" : "") + `於民國 ${toRocDateString(newStartDate)} 與原雇主續聘3年(展延至 ${toRocDateString(newEndDate)})`;
+    // 紀錄備註
+    w.notes = (w.notes ? w.notes + "；" : "") + `原聘期滿，於民國 ${toRocDateString(newStartDate)} 辦妥續聘至民國 ${toRocDateString(newEndDate)}`;
 
     saveToStorage();
     closeRenewContractModal();
     renderActiveTable();
-    alert(`續聘手續完成！${w.name} 聘期已順利展延至民國 ${toRocDateString(newEndDate)}，歷史與未來到期月份皆正常收費。`);
+    alert(`續聘手續完成！${w.name} 的聘期已展延至民國 ${toRocDateString(newEndDate)}。\n原本 112~115 年與續聘後 115~118 年均維持連續收費！`);
   }
 }
 
@@ -1764,7 +1775,7 @@
         setupRocDatePicker('rocGroup_wContractExpiry', d3.toISOString().slice(0, 10), false, false);
         setupRocDatePicker('rocGroup_wPassportExpiry', '', true, true);
 
-        // 自動推算 +3 年
+// ★★★ 安全連動：只有在「新增」案件且使用者手動選日期時才連動，編輯時絕對不改動 ★★★
         const arrivalContainer = document.getElementById('rocGroup_wArrivalDate');
         const transferContainer = document.getElementById('rocGroup_wTransferDate');
         const expContainer = document.getElementById('rocGroup_wContractExpiry');
@@ -1775,18 +1786,25 @@
           const srcM = sourceContainer.querySelector('.roc-month').value;
           const srcD = sourceContainer.querySelector('.roc-day').value;
           
-          expContainer.querySelector('.roc-year').value = srcY + 3;
-          expContainer.querySelector('.roc-month').value = srcM;
-          expContainer.querySelector('.roc-day').value = srcD;
+          if (expContainer.querySelector('.roc-year')) {
+            expContainer.querySelector('.roc-year').value = srcY + 3;
+            expContainer.querySelector('.roc-month').value = Number(srcM);
+            expContainer.querySelector('.roc-day').value = Number(srcD);
+          }
         };
 
-        arrivalContainer.querySelectorAll('select').forEach(sel => {
-          sel.onchange = () => {
-            if (document.getElementById('wType').value === '引進') {
-              applyAdd3Years(arrivalContainer);
-            }
-          };
-        });
+        // 只有在新增狀態下 (editId 是空的) 手動變更才自動跳+3年
+        arrivalContainer.onchange = () => {
+          if (document.getElementById('wType').value === '引進' && !document.getElementById('editId').value) {
+            applyAdd3Years(arrivalContainer);
+          }
+        };
+
+        transferContainer.onchange = () => {
+          if (document.getElementById('wType').value === '承接' && !document.getElementById('editId').value) {
+            applyAdd3Years(transferContainer);
+          }
+        };
 
         transferContainer.querySelectorAll('select').forEach(sel => {
           sel.onchange = () => {
