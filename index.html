@@ -16,13 +16,13 @@
     <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap justify-between items-center gap-3">
       <div class="flex items-center gap-2">
         <span class="text-xl font-bold tracking-wide">印尼移工管家 (IndoWorker Pro)</span>
-        <span class="text-xs bg-indigo-700 px-2.5 py-0.5 rounded-full text-indigo-100">護照號碼擴充版</span>
+        <span class="text-xs bg-indigo-700 px-2.5 py-0.5 rounded-full text-indigo-100">人才池與銜接版</span>
       </div>
       <div class="flex flex-wrap items-center gap-2">
-        <button onclick="backupJSON()" title="下載目前所有移工與收費紀錄到電腦存檔" class="bg-indigo-700 hover:bg-indigo-600 text-white text-xs px-2.5 py-1.5 rounded shadow">
+        <button onclick="backupJSON()" title="備份現有全部資料" class="bg-indigo-700 hover:bg-indigo-600 text-white text-xs px-2.5 py-1.5 rounded shadow">
           💾 備份資料
         </button>
-        <button onclick="document.getElementById('restoreFileInput').click()" title="從備份檔還原" class="bg-indigo-700 hover:bg-indigo-600 text-white text-xs px-2.5 py-1.5 rounded shadow">
+        <button onclick="document.getElementById('restoreFileInput').click()" title="還原備份檔" class="bg-indigo-700 hover:bg-indigo-600 text-white text-xs px-2.5 py-1.5 rounded shadow">
           📂 還原備份
         </button>
         <input type="file" id="restoreFileInput" onchange="restoreJSON(event)" class="hidden" accept=".json">
@@ -42,18 +42,18 @@
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
       <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
         <div>
-          <p class="text-xs text-slate-500 font-medium">在籍移工總數</p>
+          <p class="text-xs text-slate-500 font-medium">正常在籍移工</p>
           <h3 id="statTotal" class="text-2xl font-bold text-slate-800 mt-1">0 人</h3>
         </div>
-        <div class="w-10 h-10 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600 font-bold">總</div>
+        <div class="w-10 h-10 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600 font-bold">在</div>
       </div>
 
       <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
         <div>
-          <p class="text-xs text-slate-500 font-medium">國內承接人數</p>
-          <h3 id="statTransfer" class="text-2xl font-bold text-sky-600 mt-1">0 人</h3>
+          <p class="text-xs text-amber-600 font-medium">待轉出移工 (人才池 Pool)</p>
+          <h3 id="statTransferPool" class="text-2xl font-bold text-amber-600 mt-1">0 人</h3>
         </div>
-        <div class="w-10 h-10 rounded-lg bg-sky-50 flex items-center justify-center text-sky-600 font-bold">接</div>
+        <div class="w-10 h-10 rounded-lg bg-amber-50 flex items-center justify-center text-amber-600 font-bold">池</div>
       </div>
 
       <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
@@ -66,23 +66,39 @@
 
       <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
         <div>
-          <p class="text-xs text-amber-600 font-medium">聘約到期屆滿 (90天內)</p>
-          <h3 id="statContractAlert" class="text-2xl font-bold text-amber-600 mt-1">0 人</h3>
+          <p class="text-xs text-purple-600 font-medium">聘約到期屆滿 (90天內)</p>
+          <h3 id="statContractAlert" class="text-2xl font-bold text-purple-600 mt-1">0 人</h3>
         </div>
-        <div class="w-10 h-10 rounded-lg bg-amber-50 flex items-center justify-center text-amber-600 font-bold">約</div>
+        <div class="w-10 h-10 rounded-lg bg-purple-50 flex items-center justify-center text-purple-600 font-bold">約</div>
       </div>
     </div>
 
-    <!-- 主名冊操作工具列 -->
-    <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden p-4 space-y-4">
+    <!-- 標籤導航切換 -->
+    <div class="flex border-b border-slate-200 bg-white rounded-t-xl px-4 pt-3 gap-6 shadow-sm">
+      <button id="tabActiveBtn" onclick="switchMainTab('active')" class="pb-3 text-sm font-semibold border-b-2 border-indigo-600 text-indigo-600 flex items-center gap-1.5">
+        <span>在籍移工名冊</span>
+        <span id="badgeActiveCount" class="bg-indigo-100 text-indigo-800 text-[10px] px-1.5 py-0.5 rounded-full font-bold">0</span>
+      </button>
+      <button id="tabPoolBtn" onclick="switchMainTab('pool')" class="pb-3 text-sm font-semibold border-b-2 border-transparent text-slate-500 hover:text-slate-700 flex items-center gap-1.5">
+        <span>待轉出人才池 (Transfer Pool)</span>
+        <span id="badgePoolCount" class="bg-amber-100 text-amber-800 text-[10px] px-1.5 py-0.5 rounded-full font-bold">0</span>
+      </button>
+      <button id="tabReturnedBtn" onclick="switchMainTab('returned')" class="pb-3 text-sm font-semibold border-b-2 border-transparent text-slate-500 hover:text-slate-700 flex items-center gap-1.5">
+        <span>期滿回國 / 離境結案</span>
+        <span id="badgeReturnedCount" class="bg-slate-200 text-slate-700 text-[10px] px-1.5 py-0.5 rounded-full font-bold">0</span>
+      </button>
+    </div>
+
+    <!-- 區塊 1: 在籍名冊 (Active) -->
+    <div id="sectionActive" class="bg-white rounded-b-xl border border-t-0 border-slate-200 shadow-sm overflow-hidden p-4 space-y-4">
       <div class="flex flex-wrap items-center justify-between gap-3">
-        <!-- 搜尋列（支援編號、姓名、護照號、雇主、電話、地址） -->
+        <!-- 搜尋列 -->
         <div class="relative w-80">
-          <input type="text" id="searchInput" oninput="renderTable()" placeholder="搜尋編號、姓名、護照號、雇主、地址..." class="w-full pl-8 pr-3 py-1.5 text-xs border border-slate-300 rounded focus:outline-indigo-500">
+          <input type="text" id="searchInput" oninput="renderActiveTable()" placeholder="搜尋編號、姓名、護照號、雇主、地址..." class="w-full pl-8 pr-3 py-1.5 text-xs border border-slate-300 rounded focus:outline-indigo-500">
           <svg class="w-4 h-4 text-slate-400 absolute left-2.5 top-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
         </div>
 
-        <!-- 直覺化跨年度切換器 -->
+        <!-- 跨年度切換與說明 -->
         <div class="flex flex-wrap items-center gap-4">
           <div class="flex items-center gap-1 bg-slate-100 p-1 rounded-lg border border-slate-200">
             <button onclick="shiftYear(-1)" title="上一年" class="w-6 h-6 flex items-center justify-center rounded bg-white hover:bg-slate-200 text-slate-600 shadow-sm text-xs font-bold transition">◀</button>
@@ -90,32 +106,32 @@
             <button onclick="shiftYear(1)" title="下一年" class="w-6 h-6 flex items-center justify-center rounded bg-white hover:bg-slate-200 text-slate-600 shadow-sm text-xs font-bold transition">▶</button>
           </div>
 
-          <!-- 圓點圖例說明 -->
           <div class="flex items-center gap-3 text-[11px] text-slate-500">
-            <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-slate-300 inline-block"></span> 灰：未入境/未起聘</span>
-            <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-rose-500 inline-block"></span> 紅：應收待繳</span>
-            <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block"></span> 綠：已收訖</span>
+            <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-slate-300 inline-block"></span> 灰：未起聘</span>
+            <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-rose-500 inline-block"></span> 紅：應收</span>
+            <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block"></span> 綠：已收</span>
+            <span class="flex items-center gap-1 font-semibold text-indigo-700">🩺 含健檢或規費</span>
           </div>
         </div>
       </div>
 
-      <!-- 案件總覽表格 -->
+      <!-- 表格 -->
       <div class="overflow-x-auto">
         <table class="w-full text-left text-xs border-collapse">
           <thead>
             <tr class="bg-slate-100 text-slate-600 border-b border-slate-200">
-              <th class="p-3 w-20">編號</th>
-              <th class="p-3">移工姓名 / 護照號碼</th>
-              <th class="p-3 min-w-[200px]">所屬雇主 / 電話 / 地址</th>
-              <th class="p-3">來源類型</th>
-              <th class="p-3">首次入境日</th>
-              <th class="p-3">承接日</th>
-              <th class="p-3">聘僱到期日</th>
+              <th class="p-3 w-16">編號</th>
+              <th class="p-3 min-w-[130px]">移工姓名 / 護照號</th>
+              <th class="p-3 min-w-[190px]">雇主 / 電話 / 地址</th>
+              <th class="p-3">類別 / 費率</th>
+              <th class="p-3">起聘/入境日</th>
+              <th class="p-3">聘期到期日</th>
               <th class="p-3">護照到期日</th>
-              <th class="p-3 text-center min-w-[280px]">
-                <span id="currentYearDisplayLabel" class="text-indigo-700 font-bold">2026</span> 年收款狀態 (1~12月)
+              <th class="p-3 text-center min-w-[320px]">
+                <span id="currentYearDisplayLabel" class="text-indigo-700 font-bold">2026</span> 年收款狀態
               </th>
-              <th class="p-3 text-center w-28">操作</th>
+              <th class="p-3 text-center min-w-[130px]">異動 / 結案</th>
+              <th class="p-3 text-center w-20">編輯</th>
             </tr>
           </thead>
           <tbody id="workerTableBody" class="divide-y divide-slate-100"></tbody>
@@ -123,7 +139,201 @@
       </div>
     </div>
 
+    <!-- 區塊 2: 待轉出人才池 (Pool) -->
+    <div id="sectionPool" class="bg-white rounded-b-xl border border-t-0 border-slate-200 shadow-sm overflow-hidden p-4 space-y-4 hidden">
+      <div class="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-900 flex justify-between items-center">
+        <div>
+          <span class="font-bold">轉出人才池 (Transfer Pool)：</span>
+          收納因被照顧人往生、中途解約或轉換雇主中的印尼移工。點選「媒合新雇主」可直接將此人移轉給新雇主，並自動繼承既有年資與服務費級距！
+        </div>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-xs border-collapse">
+          <thead>
+            <tr class="bg-slate-100 text-slate-600 border-b border-slate-200">
+              <th class="p-3">編號</th>
+              <th class="p-3">移工姓名 / 護照號</th>
+              <th class="p-3">原雇主 / 電話</th>
+              <th class="p-3">轉出原因</th>
+              <th class="p-3">公告/轉出登記日</th>
+              <th class="p-3">聘約/在台年資</th>
+              <th class="p-3">護照期限</th>
+              <th class="p-3 text-center">銜接新雇主操作</th>
+            </tr>
+          </thead>
+          <tbody id="poolTableBody" class="divide-y divide-slate-100"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 區塊 3: 期滿回國 / 離境歷史庫 (Returned) -->
+    <div id="sectionReturned" class="bg-white rounded-b-xl border border-t-0 border-slate-200 shadow-sm overflow-hidden p-4 space-y-4 hidden">
+      <div class="bg-slate-100 border border-slate-200 rounded-lg p-3 text-xs text-slate-700 flex justify-between items-center">
+        <div>
+          <span class="font-bold">離境結案紀錄：</span>
+          外勞聘期屆滿回國或解約返鄉之封存紀錄。若原雇主需要「遞補引進或承接新外勞」，點選右側「為此雇主遞補新外勞」即可自動帶入原雇主姓名、電話與地址！
+        </div>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-xs border-collapse">
+          <thead>
+            <tr class="bg-slate-100 text-slate-600 border-b border-slate-200">
+              <th class="p-3">編號</th>
+              <th class="p-3">回國移工姓名</th>
+              <th class="p-3">雇主姓名 / 電話 / 地址</th>
+              <th class="p-3">離境/結案日期</th>
+              <th class="p-3">結案原因</th>
+              <th class="p-3 text-center">雇主名下遞補新移工</th>
+            </tr>
+          </thead>
+          <tbody id="returnedTableBody" class="divide-y divide-slate-100"></tbody>
+        </table>
+      </div>
+    </div>
+
   </main>
+
+  <!-- 辦理轉出 Modal 彈窗 -->
+  <div id="transferOutModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+    <div class="bg-white rounded-xl shadow-xl max-w-sm w-full overflow-hidden">
+      <div class="bg-amber-600 text-white px-5 py-3 flex justify-between items-center">
+        <h3 class="text-sm font-semibold">移工辦理轉出 (移入待轉人才池)</h3>
+        <button onclick="closeTransferOutModal()" class="text-amber-100 hover:text-white text-lg">&times;</button>
+      </div>
+      <form onsubmit="confirmTransferOut(event)" class="p-5 space-y-3.5 text-xs">
+        <input type="hidden" id="toWorkerId">
+        <div>
+          <label class="block text-slate-500 mb-1">移工姓名</label>
+          <p id="toWorkerName" class="font-bold text-slate-800 text-sm"></p>
+        </div>
+        <div>
+          <label class="block text-slate-500 mb-1">現任雇主</label>
+          <p id="toEmployerName" class="text-slate-600"></p>
+        </div>
+        <div>
+          <label class="block font-medium mb-1">轉出原因 *</label>
+          <select id="toReason" class="w-full border rounded px-2.5 py-1.5 focus:outline-amber-500">
+            <option value="被照顧人往生">被照顧人往生 (依規定轉換雇主)</option>
+            <option value="雙方合意中途解約">雙方合意中途解約 (中途轉換)</option>
+            <option value="雇主不符聘僱資格">雇主家庭或財務因素不續聘</option>
+            <option value="工廠/機構業務緊縮">機構/工廠業務緊縮或停歇業</option>
+            <option value="其他">其他原因</option>
+          </select>
+        </div>
+        <div>
+          <label class="block font-medium mb-1">解約 / 辦理轉出公告日 *</label>
+          <input type="date" id="toDate" required class="w-full border rounded px-2.5 py-1.5 focus:outline-amber-500">
+        </div>
+        <div class="pt-2 flex justify-end gap-2 border-t border-slate-100">
+          <button type="button" onclick="closeTransferOutModal()" class="px-3 py-1.5 rounded border border-slate-300 text-slate-600">取消</button>
+          <button type="submit" class="px-4 py-1.5 rounded bg-amber-600 hover:bg-amber-700 text-white font-medium">確認移入人才池</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 媒合給新雇主 Modal (承接轉出池的移工) -->
+  <div id="matchNewEmployerModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+    <div class="bg-white rounded-xl shadow-xl max-w-lg w-full overflow-hidden">
+      <div class="bg-sky-700 text-white px-5 py-3 flex justify-between items-center">
+        <h3 class="text-sm font-semibold">人才池媒合 ── 銜接給新雇主承接</h3>
+        <button onclick="closeMatchModal()" class="text-sky-100 hover:text-white text-lg">&times;</button>
+      </div>
+      <form onsubmit="confirmMatchNewEmployer(event)" class="p-5 space-y-3.5 text-xs">
+        <input type="hidden" id="matchWorkerId">
+        <div class="bg-sky-50 p-2.5 rounded border border-sky-200">
+          <p class="text-sky-900 font-bold" id="matchWorkerNameTitle"></p>
+          <p class="text-sky-700 text-[11px]" id="matchWorkerSeniorityDesc"></p>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-medium mb-1">新雇主姓名 *</label>
+            <input type="text" id="mEmployer" required placeholder="例: 林美麗" class="w-full border rounded px-2.5 py-1.5 focus:outline-sky-500">
+          </div>
+          <div>
+            <label class="block font-medium mb-1">新雇主電話</label>
+            <input type="tel" id="mPhone" placeholder="0988-123-456" class="w-full border rounded px-2.5 py-1.5 focus:outline-sky-500">
+          </div>
+        </div>
+
+        <div>
+          <label class="block font-medium mb-1">新雇主地址 *</label>
+          <input type="text" id="mAddress" required placeholder="例: 台北市大安區和平東路..." class="w-full border rounded px-2.5 py-1.5 focus:outline-sky-500">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-medium mb-1">新合約承接生效日 *</label>
+            <input type="date" id="mTransferDate" required class="w-full border rounded px-2.5 py-1.5 focus:outline-sky-500">
+          </div>
+          <div>
+            <label class="block font-medium mb-1">核准聘僱到期日 *</label>
+            <input type="date" id="mContractExpiry" required class="w-full border rounded px-2.5 py-1.5 focus:outline-sky-500">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-medium mb-1">新雇主收費方式</label>
+            <select id="mPaymentMethod" class="w-full border rounded px-2 py-1.5 focus:outline-sky-500">
+              <option value="雇主代扣">雇主代扣</option>
+              <option value="移工自繳(匯款)">移工自繳(匯款)</option>
+              <option value="現金收款">現金收款</option>
+            </select>
+          </div>
+          <div>
+            <label class="block font-medium mb-1">備註</label>
+            <input type="text" id="mNotes" placeholder="承接相關備註..." class="w-full border rounded px-2.5 py-1.5 focus:outline-sky-500">
+          </div>
+        </div>
+
+        <div class="pt-2 flex justify-end gap-2 border-t border-slate-100">
+          <button type="button" onclick="closeMatchModal()" class="px-3 py-1.5 rounded border border-slate-300 text-slate-600">取消</button>
+          <button type="submit" class="px-4 py-1.5 rounded bg-sky-700 hover:bg-sky-800 text-white font-medium">確認媒合生效並移入在籍名冊</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 期滿回國結案 Modal -->
+  <div id="returnModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+    <div class="bg-white rounded-xl shadow-xl max-w-sm w-full overflow-hidden">
+      <div class="bg-slate-700 text-white px-5 py-3 flex justify-between items-center">
+        <h3 class="text-sm font-semibold">期滿回國 / 離境結案封存</h3>
+        <button onclick="closeReturnModal()" class="text-slate-300 hover:text-white text-lg">&times;</button>
+      </div>
+      <form onsubmit="confirmReturnWorker(event)" class="p-5 space-y-3.5 text-xs">
+        <input type="hidden" id="returnWorkerId">
+        <div>
+          <label class="block text-slate-500 mb-1">回國移工</label>
+          <p id="returnWorkerName" class="font-bold text-slate-800 text-sm"></p>
+        </div>
+        <div>
+          <label class="block text-slate-500 mb-1">所屬雇主</label>
+          <p id="returnEmployerName" class="text-slate-600"></p>
+        </div>
+        <div>
+          <label class="block font-medium mb-1">離境原因</label>
+          <select id="returnReason" class="w-full border rounded px-2.5 py-1.5 focus:outline-slate-500">
+            <option value="三年期滿回國">三年期滿正常返鄉回國</option>
+            <option value="合意提前解約返國">合意提前解約搭機返國</option>
+            <option value="其他原因離境">其他原因離境</option>
+          </select>
+        </div>
+        <div>
+          <label class="block font-medium mb-1">搭機離境/結案日期 *</label>
+          <input type="date" id="returnDate" required class="w-full border rounded px-2.5 py-1.5 focus:outline-slate-500">
+        </div>
+        <div class="pt-2 flex justify-end gap-2 border-t border-slate-100">
+          <button type="button" onclick="closeReturnModal()" class="px-3 py-1.5 rounded border border-slate-300 text-slate-600">取消</button>
+          <button type="submit" class="px-4 py-1.5 rounded bg-slate-700 hover:bg-slate-800 text-white font-medium">確認封存離境</button>
+        </div>
+      </form>
+    </div>
+  </div>
 
   <!-- 護照換發/延期 Modal -->
   <div id="renewPassportModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
@@ -139,7 +349,7 @@
           <p id="renewWorkerName" class="font-bold text-slate-800 text-sm"></p>
         </div>
         <div>
-          <label class="block font-medium mb-1">護照號碼 (換發新照若變更可在此修改)</label>
+          <label class="block font-medium mb-1">新護照號碼 (換發可在此更新)</label>
           <input type="text" id="renewPassportNo" class="w-full border rounded px-2.5 py-1.5 uppercase focus:outline-indigo-500">
         </div>
         <div>
@@ -196,22 +406,26 @@
 
   <!-- 新增/編輯 Modal 彈窗 -->
   <div id="workerModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
-    <div class="bg-white rounded-xl shadow-xl max-w-lg w-full overflow-hidden">
-      <div class="bg-indigo-900 text-white px-5 py-3 flex justify-between items-center">
+    <div class="bg-white rounded-xl shadow-xl max-w-xl w-full overflow-hidden max-h-[90vh] overflow-y-auto">
+      <div class="bg-indigo-900 text-white px-5 py-3 flex justify-between items-center sticky top-0 z-10">
         <h3 id="modalTitle" class="text-sm font-semibold">新增移工案件</h3>
-        <button onclick="closeModal()" class="text-slate-300 hover:text-white">&times;</button>
+        <button onclick="closeModal()" class="text-slate-300 hover:text-white text-lg">&times;</button>
       </div>
-      <form id="workerForm" onsubmit="saveWorker(event)" class="p-5 space-y-3.5 text-xs">
+      <form id="workerForm" onsubmit="saveWorker(event)" class="p-5 space-y-4 text-xs">
         <input type="hidden" id="editId">
 
         <div class="grid grid-cols-3 gap-3">
           <div>
-            <label class="block font-medium mb-1">移工編號 (自訂) *</label>
+            <label class="block font-medium mb-1">自訂編號 *</label>
             <input type="text" id="wCode" required placeholder="例: ID-01" class="w-full border rounded px-2.5 py-1.5 font-bold text-indigo-700 focus:outline-indigo-500">
           </div>
-          <div class="col-span-2">
+          <div>
             <label class="block font-medium mb-1">移工姓名 (中/英) *</label>
-            <input type="text" id="wName" required placeholder="例: SITI AMINAH (阿米)" class="w-full border rounded px-2.5 py-1.5 focus:outline-indigo-500">
+            <input type="text" id="wName" required placeholder="例: SITI (阿米)" class="w-full border rounded px-2.5 py-1.5 focus:outline-indigo-500">
+          </div>
+          <div>
+            <label class="block font-medium mb-1">護照號碼</label>
+            <input type="text" id="wPassportNo" placeholder="例: C1234567" class="w-full border rounded px-2.5 py-1.5 uppercase focus:outline-indigo-500">
           </div>
         </div>
 
@@ -240,7 +454,7 @@
             </select>
           </div>
           <div>
-            <label class="block font-medium mb-1">首次入境抵台日 *</label>
+            <label class="block font-medium mb-1">本次入境日 / 起聘日 *</label>
             <input type="date" id="wArrivalDate" required class="w-full border rounded px-2 py-1.5 focus:outline-indigo-500">
           </div>
         </div>
@@ -251,15 +465,54 @@
             <input type="date" id="wTransferDate" class="w-full border border-sky-300 rounded px-2 py-1.5 bg-white">
           </div>
           <div class="text-[11px] text-sky-700 flex items-center">
-            * 承接案將以承接日起算收費點；入境日用來判定累計年資級距。
+            * 承接者以承接日開始計算收款；滿期換約或引進者以入境日起算。
           </div>
         </div>
 
-        <div class="grid grid-cols-3 gap-3">
-          <div>
-            <label class="block font-medium mb-1">護照號碼</label>
-            <input type="text" id="wPassportNo" placeholder="例: C1234567" class="w-full border rounded px-2.5 py-1.5 uppercase focus:outline-indigo-500">
+        <div class="bg-amber-50 p-3 rounded-lg border border-amber-200 space-y-2">
+          <span class="font-bold text-amber-900 block">⭐ 服務費費率設定 (同一外勞重聘/在台年資)</span>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block font-medium text-amber-800 mb-1">服務費收費模式 *</label>
+              <select id="wFeeMode" onchange="toggleSeniorMonthsField()" class="w-full border border-amber-300 rounded px-2 py-1.5 bg-white focus:outline-amber-500">
+                <option value="NORMAL">全新引進 (第1年1800, 第2年1700, 第3年1500)</option>
+                <option value="FIXED_1500">已在台滿2年以上 / 重聘 (每月固定 $1,500)</option>
+                <option value="CUSTOM_MONTHS">自訂累計在台年資 (接續舊年資計算)</option>
+              </select>
+            </div>
+            <div id="customMonthsGroup" class="hidden">
+              <label class="block font-medium text-amber-800 mb-1">本次入境前已累計月數</label>
+              <input type="number" id="wPriorMonths" value="0" min="0" max="144" class="w-full border border-amber-300 rounded px-2 py-1.5 bg-white focus:outline-amber-500">
+            </div>
           </div>
+        </div>
+
+        <div class="bg-indigo-50 p-3 rounded-lg border border-indigo-200 space-y-2">
+          <span class="font-bold text-indigo-900 block">⭐ 第 1 個月首期規費/健檢加收項目</span>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block font-medium text-indigo-800 mb-1">第 1 個月入國健檢費</label>
+              <select id="wFirstMonthMedical" class="w-full border border-indigo-300 rounded px-2 py-1.5 bg-white">
+                <option value="0">無加收 ($0)</option>
+                <option value="2500">加收入國健檢 $2,500</option>
+                <option value="2000">加收 $2,000</option>
+              </select>
+            </div>
+            <div>
+              <label class="block font-medium text-indigo-800 mb-1">第 1 個月居留證(ARC)費用</label>
+              <select id="wFirstMonthArc" class="w-full border border-indigo-300 rounded px-2 py-1.5 bg-white">
+                <option value="3030">3,030 元 (常見3年期+指紋/晶片)</option>
+                <option value="3000">3,000 元</option>
+                <option value="2000">2,000 元 (2年期)</option>
+                <option value="1010">1,010 元 (1年期)</option>
+                <option value="1000">1,000 元</option>
+                <option value="0">無 (雇主自付/已繳 $0)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
           <div>
             <label class="block font-medium mb-1">護照到期日 *</label>
             <input type="date" id="wPassportExpiry" required class="w-full border rounded px-2.5 py-1.5 focus:outline-indigo-500">
@@ -272,7 +525,7 @@
 
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="block font-medium mb-1">收費方式</label>
+            <label class="block font-medium mb-1">主要收費方式</label>
             <select id="wPaymentMethod" class="w-full border rounded px-2 py-1.5 focus:outline-indigo-500">
               <option value="雇主代扣">雇主代扣</option>
               <option value="移工自繳(匯款)">移工自繳(匯款)</option>
@@ -281,7 +534,7 @@
           </div>
           <div>
             <label class="block font-medium mb-1">備註說明</label>
-            <input type="text" id="wNotes" placeholder="特殊備註..." class="w-full border rounded px-2.5 py-1.5 focus:outline-indigo-500">
+            <input type="text" id="wNotes" placeholder="特殊約定備註..." class="w-full border rounded px-2.5 py-1.5 focus:outline-indigo-500">
           </div>
         </div>
 
@@ -294,32 +547,23 @@
   </div>
 
   <script>
-    // 預設示範資料（僅在第一次全空時載入，有舊資料時會直接讀取使用者已輸入的內容）
-    const DEFAULT_DATA = [
-      {
-        id: "1",
-        code: "ID-01",
-        name: "SITI AMINAH (阿米)",
-        passportNo: "C1234567",
-        employer: "陳大明",
-        phone: "0912-345-678",
-        address: "新北市汐止區大同路二段123號",
-        type: "引進",
-        arrivalDate: "2026-05-10",
-        transferDate: "",
-        contractExpiry: "2029-05-10",
-        passportExpiry: "2030-01-20",
-        paymentMethod: "雇主代扣",
-        notes: "5月剛入境"
-      }
-    ];
-
-    let workers = JSON.parse(localStorage.getItem('indo_workers_db')) || DEFAULT_DATA;
+    let workers = JSON.parse(localStorage.getItem('indo_workers_db')) || [];
     let billingHistory = JSON.parse(localStorage.getItem('indo_billing_db')) || {};
     
+    // 初始化確保所有歷史資料都有 status 欄位 (預設皆為 ACTIVE)
+    workers.forEach(w => {
+      if (!w.status) w.status = 'ACTIVE';
+    });
+
     const currentYear = new Date().getFullYear();
     let displayYear = currentYear;
+    let currentMainTab = 'active';
     let activeWorkerForMulti = null;
+
+    function saveToStorage() {
+      localStorage.setItem('indo_workers_db', JSON.stringify(workers));
+      localStorage.setItem('indo_billing_db', JSON.stringify(billingHistory));
+    }
 
     function initYearSelector() {
       const select = document.getElementById('yearSelect');
@@ -340,7 +584,7 @@
       displayYear = year;
       document.getElementById('currentYearDisplayLabel').innerText = year;
       document.getElementById('yearSelect').value = year;
-      renderTable();
+      renderActiveTable();
     }
 
     function shiftYear(offset) {
@@ -356,26 +600,6 @@
       changeDisplayYear(newYear);
     }
 
-    function saveToStorage() {
-      localStorage.setItem('indo_workers_db', JSON.stringify(workers));
-      localStorage.setItem('indo_billing_db', JSON.stringify(billingHistory));
-    }
-
-    function getMonthsInTaiwanAtMonth(arrivalDateStr, targetYearMonthStr) {
-      if (!arrivalDateStr) return 1;
-      const start = new Date(arrivalDateStr);
-      const [year, month] = targetYearMonthStr.split('-').map(Number);
-      const targetDate = new Date(year, month - 1, 1);
-      let months = (targetDate.getFullYear() - start.getFullYear()) * 12 + (targetDate.getMonth() - start.getMonth()) + 1;
-      return months > 0 ? months : 1;
-    }
-
-    function calculateServiceFee(months) {
-      if (months <= 12) return 1800;
-      if (months <= 24) return 1700;
-      return 1500;
-    }
-
     function getDiffDays(dateStr) {
       if (!dateStr) return 9999;
       const target = new Date(dateStr);
@@ -385,27 +609,112 @@
       return Math.round((target - now) / (1000 * 60 * 60 * 24));
     }
 
-    function isWorkerActiveInMonth(worker, year, month) {
-      const targetStartDate = new Date(year, month - 1, 1);
+    function getContractMonthIndex(worker, year, month) {
       const effectiveDateStr = worker.type === '承接' && worker.transferDate ? worker.transferDate : worker.arrivalDate;
-      if (!effectiveDateStr) return false;
+      if (!effectiveDateStr) return -1;
       
-      const effectiveDate = new Date(effectiveDateStr);
-      const effectiveStartMonth = new Date(effectiveDate.getFullYear(), effectiveDate.getMonth(), 1);
-      
-      return targetStartDate >= effectiveStartMonth;
+      const start = new Date(effectiveDateStr);
+      const targetDate = new Date(year, month - 1, 1);
+      const startMonthDate = new Date(start.getFullYear(), start.getMonth(), 1);
+
+      if (targetDate < startMonthDate) return -1;
+
+      return (targetDate.getFullYear() - startMonthDate.getFullYear()) * 12 + (targetDate.getMonth() - startMonthDate.getMonth()) + 1;
     }
 
-    function renderTable() {
+    function calculateDetailedFee(worker, year, month) {
+      const contractMonth = getContractMonthIndex(worker, year, month);
+      if (contractMonth <= 0) {
+        return { total: 0, serviceFee: 0, medicalFee: 0, arcFee: 0, label: "尚未起聘", isActive: false };
+      }
+
+      let serviceFee = 1500;
+      const feeMode = worker.feeMode || 'NORMAL';
+
+      if (feeMode === 'FIXED_1500') {
+        serviceFee = 1500;
+      } else if (feeMode === 'CUSTOM_MONTHS') {
+        const prior = Number(worker.priorMonths || 0);
+        const totalMonths = prior + contractMonth;
+        if (totalMonths <= 12) serviceFee = 1800;
+        else if (totalMonths <= 24) serviceFee = 1700;
+        else serviceFee = 1500;
+      } else {
+        if (contractMonth <= 12) serviceFee = 1800;
+        else if (contractMonth <= 24) serviceFee = 1700;
+        else serviceFee = 1500;
+      }
+
+      let medicalFee = 0;
+      let medicalNote = "";
+      if (contractMonth === 1) {
+        const firstMed = Number(worker.firstMonthMedical !== undefined ? worker.firstMonthMedical : 0);
+        if (firstMed > 0) {
+          medicalFee += firstMed;
+          medicalNote = `入國健檢 $${firstMed}`;
+        }
+      } else if (contractMonth === 6 || contractMonth === 18 || contractMonth === 30 || contractMonth === 31) {
+        medicalFee += 2000;
+        medicalNote = `第${contractMonth}個月健檢 $2,000`;
+      }
+
+      let arcFee = 0;
+      if (contractMonth === 1) {
+        arcFee = Number(worker.firstMonthArc !== undefined ? worker.firstMonthArc : 3030);
+      }
+
+      const total = serviceFee + medicalFee + arcFee;
+      let details = [`服務費: $${serviceFee}`];
+      if (medicalFee > 0) details.push(medicalNote);
+      if (arcFee > 0) details.push(`居留證: $${arcFee}`);
+
+      return {
+        total: total,
+        serviceFee: serviceFee,
+        medicalFee: medicalFee,
+        arcFee: arcFee,
+        hasExtra: (medicalFee > 0 || arcFee > 0),
+        detailText: details.join(' + ') + ` = 共 $${total}`,
+        contractMonth: contractMonth,
+        isActive: true
+      };
+    }
+
+    // ====== 頁籤切換 ======
+    function switchMainTab(tab) {
+      currentMainTab = tab;
+      document.getElementById('sectionActive').classList.toggle('hidden', tab !== 'active');
+      document.getElementById('sectionPool').classList.toggle('hidden', tab !== 'pool');
+      document.getElementById('sectionReturned').classList.toggle('hidden', tab !== 'returned');
+
+      document.getElementById('tabActiveBtn').className = tab === 'active' ? 'pb-3 text-sm font-semibold border-b-2 border-indigo-600 text-indigo-600 flex items-center gap-1.5' : 'pb-3 text-sm font-semibold border-b-2 border-transparent text-slate-500 hover:text-slate-700 flex items-center gap-1.5';
+      document.getElementById('tabPoolBtn').className = tab === 'pool' ? 'pb-3 text-sm font-semibold border-b-2 border-amber-600 text-amber-600 flex items-center gap-1.5' : 'pb-3 text-sm font-semibold border-b-2 border-transparent text-slate-500 hover:text-slate-700 flex items-center gap-1.5';
+      document.getElementById('tabReturnedBtn').className = tab === 'returned' ? 'pb-3 text-sm font-semibold border-b-2 border-slate-700 text-slate-800 flex items-center gap-1.5' : 'pb-3 text-sm font-semibold border-b-2 border-transparent text-slate-500 hover:text-slate-700 flex items-center gap-1.5';
+
+      if (tab === 'active') renderActiveTable();
+      if (tab === 'pool') renderPoolTable();
+      if (tab === 'returned') renderReturnedTable();
+    }
+
+    // ====== 1. 在籍名冊渲染 ======
+    function renderActiveTable() {
       const tbody = document.getElementById('workerTableBody');
       const keyword = document.getElementById('searchInput').value.trim().toLowerCase();
       tbody.innerHTML = '';
 
-      let transferCount = 0;
+      let activeCount = 0;
+      let poolCount = 0;
+      let returnedCount = 0;
       let passportAlertCount = 0;
       let contractAlertCount = 0;
 
-      const filtered = workers.filter(w => {
+      workers.forEach(w => {
+        if (w.status === 'POOL') poolCount++;
+        else if (w.status === 'RETURNED') returnedCount++;
+        else activeCount++;
+      });
+
+      const activeList = workers.filter(w => (!w.status || w.status === 'ACTIVE')).filter(w => {
         const code = (w.code || '').toLowerCase();
         const name = (w.name || '').toLowerCase();
         const employer = (w.employer || '').toLowerCase();
@@ -415,23 +724,21 @@
         return code.includes(keyword) || name.includes(keyword) || employer.includes(keyword) || phone.includes(keyword) || address.includes(keyword) || passportNo.includes(keyword);
       });
 
-      filtered.forEach(w => {
-        if (w.type === '承接') transferCount++;
-
+      activeList.forEach(w => {
         const passDays = getDiffDays(w.passportExpiry);
         const contDays = getDiffDays(w.contractExpiry);
 
         if (passDays <= 180) passportAlertCount++;
         if (contDays <= 90) contractAlertCount++;
 
-        let passBadge = `<div class="flex items-center gap-1.5">
+        let passBadge = `<div class="flex items-center gap-1">
           <span class="${passDays < 0 ? 'text-rose-600 font-bold' : (passDays <= 180 ? 'text-amber-600 font-semibold' : 'text-slate-600')}">
             ${w.passportExpiry}
           </span>
-          <button onclick="openRenewPassportModal('${w.id}')" title="護照延期/換發" class="text-[10px] bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 border px-1 rounded text-slate-500">延期</button>
+          <button onclick="openRenewPassportModal('${w.id}')" title="換照延期" class="text-[10px] bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 border px-1 rounded text-slate-500">延</button>
         </div>`;
 
-        let contBadge = `<span class="${contDays < 0 ? 'text-rose-600 font-bold' : (contDays <= 90 ? 'text-amber-600 font-semibold' : 'text-slate-600')}">
+        let contBadge = `<span class="${contDays < 0 ? 'text-rose-600 font-bold' : (contDays <= 90 ? 'text-purple-600 font-semibold' : 'text-slate-600')}">
           ${w.contractExpiry}
         </span>`;
 
@@ -439,30 +746,31 @@
         for (let m = 1; m <= 12; m++) {
           const mStr = String(m).padStart(2, '0');
           const ym = `${displayYear}-${mStr}`;
-          const isActive = isWorkerActiveInMonth(w, displayYear, m);
+          const feeInfo = calculateDetailedFee(w, displayYear, m);
           const isPaid = billingHistory[ym] && billingHistory[ym][w.id] && billingHistory[ym][w.id].status === '已收';
 
           let colorClass = "";
           let title = "";
 
-          if (!isActive) {
+          if (!feeInfo.isActive) {
             colorClass = "bg-slate-200 border-slate-300 text-slate-400 cursor-not-allowed";
             title = `${ym}：尚未入境/起聘`;
           } else if (isPaid) {
             colorClass = "bg-emerald-500 border-emerald-600 text-white cursor-pointer hover:scale-110 shadow-sm";
-            title = `${ym}：已收款 (點擊切換為未收)`;
+            title = `${ym} (第${feeInfo.contractMonth}個月) [已收款]\n明細：${feeInfo.detailText}\n(點擊可改為未收)`;
           } else {
             colorClass = "bg-rose-500 border-rose-600 text-white cursor-pointer hover:scale-110 shadow-sm";
-            title = `${ym}：應收未收 (點擊標記已收)`;
+            title = `${ym} (第${feeInfo.contractMonth}個月) [應收待繳]\n明細：${feeInfo.detailText}\n(點擊直接標記已收)`;
           }
 
           dotsHtml += `
             <button 
               type="button"
-              onclick="${isActive ? `toggleSingleDot('${ym}', '${w.id}')` : `alert('此移工在 ${ym} 尚未起聘入境，無須收費。')`}"
+              onclick="${feeInfo.isActive ? `toggleSingleDot('${ym}', '${w.id}')` : `alert('此移工在 ${ym} 尚未起聘入境，無須收費。')`}"
               title="${title}"
-              class="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-semibold border transition-all ${colorClass}">
+              class="relative w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-semibold border transition-all ${colorClass}">
               ${m}
+              ${feeInfo.hasExtra ? '<span class="absolute -top-1 -right-1 text-[8px] leading-none">🩺</span>' : ''}
             </button>
           `;
         }
@@ -471,6 +779,9 @@
             批次
           </button>
         </div>`;
+
+        let feeBadge = w.feeMode === 'FIXED_1500' ? `<span class="bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded text-[10px] font-medium border border-emerald-200">固定$1500</span>` : (w.feeMode === 'CUSTOM_MONTHS' ? `<span class="bg-amber-50 text-amber-700 px-1.5 py-0.5 rounded text-[10px] font-medium border border-amber-200">累計年資</span>` : `<span class="bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded text-[10px]">標準1800起</span>`);
+        const effectiveDateStr = w.type === '承接' && w.transferDate ? w.transferDate : w.arrivalDate;
 
         const tr = document.createElement('tr');
         tr.className = "hover:bg-slate-50";
@@ -481,37 +792,269 @@
           <td class="p-3">
             <div class="font-bold text-slate-800">${w.name}</div>
             <div class="text-[10px] text-indigo-600 font-mono font-medium">${w.passportNo ? `🪪 ${w.passportNo}` : '<span class="text-slate-400">未填護照號</span>'}</div>
-            <div class="text-[10px] text-slate-400">印尼籍 🇮🇩</div>
           </td>
           <td class="p-3">
             <div class="font-medium text-slate-800">${w.employer}</div>
             <div class="text-slate-500 text-[11px]">${w.phone || '-'}</div>
-            <div class="text-slate-400 text-[10px] truncate max-w-[220px]" title="${w.address || ''}">📍 ${w.address || '未填寫地址'}</div>
+            <div class="text-slate-400 text-[10px] truncate max-w-[190px]" title="${w.address || ''}">📍 ${w.address || '未填寫地址'}</div>
           </td>
-          <td class="p-3">
-            ${w.type === '承接' 
-              ? `<span class="bg-sky-100 text-sky-700 px-2 py-0.5 rounded-full font-medium text-[11px]">承接</span>` 
-              : `<span class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full text-[11px]">引進</span>`}
+          <td class="p-3 space-y-1">
+            <div>${w.type === '承接' ? `<span class="bg-sky-100 text-sky-700 px-1.5 py-0.5 rounded-full font-medium text-[10px]">承接</span>` : `<span class="bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded-full text-[10px]">引進</span>`}</div>
+            <div>${feeBadge}</div>
           </td>
-          <td class="p-3">${w.arrivalDate}</td>
-          <td class="p-3 text-sky-700 font-medium">${w.transferDate || '-'}</td>
+          <td class="p-3">${effectiveDateStr}</td>
           <td class="p-3">${contBadge}</td>
           <td class="p-3">${passBadge}</td>
           <td class="p-3 text-center">${dotsHtml}</td>
-          <td class="p-3 text-center space-x-2">
+          <td class="p-3 text-center space-x-1">
+            <button onclick="openTransferOutModal('${w.id}')" title="被照顧人往生或解約轉出" class="bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-300 px-1.5 py-0.5 rounded text-[11px] font-medium">辦轉出</button>
+            <button onclick="openReturnModal('${w.id}')" title="三年期滿或解約搭機回國" class="bg-slate-100 hover:bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded text-[11px]">回國</button>
+          </td>
+          <td class="p-3 text-center space-x-1">
             <button onclick="editWorker('${w.id}')" class="text-indigo-600 hover:text-indigo-900 font-medium">編輯</button>
-            <button onclick="deleteWorker('${w.id}')" class="text-rose-600 hover:text-rose-900 font-medium">刪除</button>
+            <button onclick="deleteWorker('${w.id}')" class="text-rose-500 hover:text-rose-800 font-medium">刪除</button>
           </td>
         `;
         tbody.appendChild(tr);
       });
 
-      document.getElementById('statTotal').innerText = `${workers.length} 人`;
-      document.getElementById('statTransfer').innerText = `${transferCount} 人`;
+      // 更新數字
+      document.getElementById('statTotal').innerText = `${activeCount} 人`;
+      document.getElementById('statTransferPool').innerText = `${poolCount} 人`;
       document.getElementById('statPassportAlert').innerText = `${passportAlertCount} 人`;
       document.getElementById('statContractAlert').innerText = `${contractAlertCount} 人`;
+
+      document.getElementById('badgeActiveCount').innerText = activeCount;
+      document.getElementById('badgePoolCount').innerText = poolCount;
+      document.getElementById('badgeReturnedCount').innerText = returnedCount;
     }
 
+    // ====== 2. 待轉出人才池 (Pool) 渲染 ======
+    function renderPoolTable() {
+      const tbody = document.getElementById('poolTableBody');
+      tbody.innerHTML = '';
+
+      const poolList = workers.filter(w => w.status === 'POOL');
+
+      if (poolList.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="8" class="text-center p-8 text-slate-400">目前人才池沒有待轉出的移工。</td></tr>`;
+        return;
+      }
+
+      poolList.forEach(w => {
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-amber-50/50";
+        tr.innerHTML = `
+          <td class="p-3 font-mono font-bold text-indigo-700">${w.code}</td>
+          <td class="p-3">
+            <div class="font-bold text-slate-800">${w.name}</div>
+            <div class="text-[10px] text-slate-500">🪪 ${w.passportNo || '未填護照號'}</div>
+          </td>
+          <td class="p-3">
+            <div class="font-medium text-slate-700">${w.employer}</div>
+            <div class="text-slate-400 text-[11px]">${w.phone || '-'}</div>
+          </td>
+          <td class="p-3">
+            <span class="bg-amber-100 text-amber-800 px-2 py-0.5 rounded font-semibold text-[11px]">${w.transferReason || '轉換雇主'}</span>
+          </td>
+          <td class="p-3 text-slate-600">${w.transferOutDate || '-'}</td>
+          <td class="p-3">
+            <div class="text-slate-600">${w.contractExpiry} 止</div>
+            <div class="text-[10px] text-indigo-600 font-medium">首次入境：${w.arrivalDate}</div>
+          </td>
+          <td class="p-3 text-slate-600">${w.passportExpiry}</td>
+          <td class="p-3 text-center space-x-2">
+            <button onclick="openMatchModal('${w.id}')" class="bg-sky-600 hover:bg-sky-700 text-white font-medium px-3 py-1 rounded shadow-sm text-xs">
+              🤝 媒合新雇主承接
+            </button>
+            <button onclick="revertToActive('${w.id}')" class="text-slate-400 hover:text-slate-600 text-xs">復原在籍</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    // ====== 3. 期滿回國 / 離境歷史庫渲染 ======
+    function renderReturnedTable() {
+      const tbody = document.getElementById('returnedTableBody');
+      tbody.innerHTML = '';
+
+      const returnedList = workers.filter(w => w.status === 'RETURNED');
+
+      if (returnedList.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" class="text-center p-8 text-slate-400">尚無期滿回國或封存的離境紀錄。</td></tr>`;
+        return;
+      }
+
+      returnedList.forEach(w => {
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-slate-50";
+        tr.innerHTML = `
+          <td class="p-3 font-mono text-slate-400">${w.code}</td>
+          <td class="p-3">
+            <div class="font-bold text-slate-600">${w.name}</div>
+            <div class="text-[10px] text-slate-400">🪪 ${w.passportNo || ''}</div>
+          </td>
+          <td class="p-3">
+            <div class="font-medium text-slate-800">${w.employer}</div>
+            <div class="text-slate-400 text-[11px]">${w.phone || '-'} ｜ 📍 ${w.address || '-'}</div>
+          </td>
+          <td class="p-3 text-slate-600">${w.returnDate || '-'}</td>
+          <td class="p-3">
+            <span class="bg-slate-200 text-slate-700 px-2 py-0.5 rounded text-[11px]">${w.returnReason || '期滿回國'}</span>
+          </td>
+          <td class="p-3 text-center">
+            <button onclick="rehireForEmployer('${w.id}')" class="bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-3 py-1 rounded shadow-sm text-xs">
+              ➕ 為此雇主遞補新移工
+            </button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    // ====== 轉出 (Transfer Out) 互動邏輯 ======
+    function openTransferOutModal(workerId) {
+      const w = workers.find(item => item.id === workerId);
+      if (!w) return;
+      document.getElementById('toWorkerId').value = w.id;
+      document.getElementById('toWorkerName').innerText = `${w.name} (${w.code})`;
+      document.getElementById('toEmployerName').innerText = `${w.employer} (${w.address || ''})`;
+      document.getElementById('toDate').value = new Date().toISOString().slice(0,10);
+      document.getElementById('transferOutModal').classList.remove('hidden');
+    }
+
+    function closeTransferOutModal() {
+      document.getElementById('transferOutModal').classList.add('hidden');
+    }
+
+    function confirmTransferOut(e) {
+      e.preventDefault();
+      const id = document.getElementById('toWorkerId').value;
+      const w = workers.find(item => item.id === id);
+      if (w) {
+        w.status = 'POOL'; // 移入人才池
+        w.transferReason = document.getElementById('toReason').value;
+        w.transferOutDate = document.getElementById('toDate').value;
+        w.notes = (w.notes ? w.notes + "；" : "") + `於 ${w.transferOutDate} 辦理轉出 (${w.transferReason})`;
+        saveToStorage();
+        closeTransferOutModal();
+        renderActiveTable();
+        alert(`移工 ${w.name} 已成功移入「待轉出人才池」！`);
+      }
+    }
+
+    function revertToActive(workerId) {
+      const w = workers.find(item => item.id === workerId);
+      if (w && confirm(`確定將 ${w.name} 移回正常在籍名冊？`)) {
+        w.status = 'ACTIVE';
+        saveToStorage();
+        renderPoolTable();
+        renderActiveTable();
+      }
+    }
+
+    // ====== 媒合新雇主 (承接銜接) 互動邏輯 ======
+    function openMatchModal(workerId) {
+      const w = workers.find(item => item.id === workerId);
+      if (!w) return;
+      document.getElementById('matchWorkerId').value = w.id;
+      document.getElementById('matchWorkerNameTitle').innerText = `承接移工：${w.name} (原雇主: ${w.employer})`;
+      
+      // 計算他在台灣已做滿多少個月
+      const start = new Date(w.arrivalDate);
+      const now = new Date();
+      const priorMonths = (now.getFullYear() - start.getFullYear()) * 12 + (now.getMonth() - start.getMonth());
+      document.getElementById('matchWorkerSeniorityDesc').innerText = `首次入境日為 ${w.arrivalDate}，在台已累計約 ${priorMonths} 個月年資。轉入新雇主後將依此續算服務費級距！`;
+
+      document.getElementById('mEmployer').value = '';
+      document.getElementById('mPhone').value = '';
+      document.getElementById('mAddress').value = '';
+      document.getElementById('mTransferDate').value = new Date().toISOString().slice(0,10);
+      document.getElementById('mContractExpiry').value = w.contractExpiry;
+      document.getElementById('mNotes').value = `承接自原雇主 ${w.employer}`;
+
+      document.getElementById('matchNewEmployerModal').classList.remove('hidden');
+    }
+
+    function closeMatchModal() {
+      document.getElementById('matchNewEmployerModal').classList.add('hidden');
+    }
+
+    function confirmMatchNewEmployer(e) {
+      e.preventDefault();
+      const id = document.getElementById('matchWorkerId').value;
+      const w = workers.find(item => item.id === id);
+      if (w) {
+        // 更新為新雇主並改為國內承接
+        w.status = 'ACTIVE';
+        w.employer = document.getElementById('mEmployer').value.trim();
+        w.phone = document.getElementById('mPhone').value.trim();
+        w.address = document.getElementById('mAddress').value.trim();
+        w.type = '承接';
+        w.transferDate = document.getElementById('mTransferDate').value;
+        w.contractExpiry = document.getElementById('mContractExpiry').value;
+        w.paymentMethod = document.getElementById('mPaymentMethod').value;
+        w.notes = (w.notes ? w.notes + "；" : "") + `於 ${w.transferDate} 由新雇主 ${w.employer} 承接`;
+        
+        // 確保年資接續
+        w.feeMode = 'NORMAL'; // 依然以 arrivalDate 累計
+
+        saveToStorage();
+        closeMatchModal();
+        switchMainTab('active');
+        alert(`承接手續完成！${w.name} 已銜接至新雇主 ${w.employer} 名下。`);
+      }
+    }
+
+    // ====== 期滿回國封存與為雇主遞補 ======
+    function openReturnModal(workerId) {
+      const w = workers.find(item => item.id === workerId);
+      if (!w) return;
+      document.getElementById('returnWorkerId').value = w.id;
+      document.getElementById('returnWorkerName').innerText = `${w.name} (${w.code})`;
+      document.getElementById('returnEmployerName').innerText = `${w.employer}`;
+      document.getElementById('returnDate').value = new Date().toISOString().slice(0,10);
+      document.getElementById('returnModal').classList.remove('hidden');
+    }
+
+    function closeReturnModal() {
+      document.getElementById('returnModal').classList.add('hidden');
+    }
+
+    function confirmReturnWorker(e) {
+      e.preventDefault();
+      const id = document.getElementById('returnWorkerId').value;
+      const w = workers.find(item => item.id === id);
+      if (w) {
+        w.status = 'RETURNED';
+        w.returnReason = document.getElementById('returnReason').value;
+        w.returnDate = document.getElementById('returnDate').value;
+        w.notes = (w.notes ? w.notes + "；" : "") + `於 ${w.returnDate} ${w.returnReason} 離境封存`;
+        saveToStorage();
+        closeReturnModal();
+        renderActiveTable();
+        alert(`移工 ${w.name} 已歸檔至「期滿回國 / 離境結案」清單！`);
+      }
+    }
+
+    // 為離境移工的原雇主一鍵遞補新外勞
+    function rehireForEmployer(oldWorkerId) {
+      const oldW = workers.find(item => item.id === oldWorkerId);
+      if (!oldW) return;
+
+      openModal(false);
+      // 自動帶入該雇主資料
+      document.getElementById('wEmployer').value = oldW.employer;
+      document.getElementById('wPhone').value = oldW.phone || '';
+      document.getElementById('wAddress').value = oldW.address || '';
+      document.getElementById('wNotes').value = `遞補原離境移工 ${oldW.name} (${oldW.code})`;
+      
+      switchMainTab('active');
+      alert(`已自動為雇主「${oldW.employer}」開啟新增視窗，地址與聯絡電話已自動帶入！`);
+    }
+
+    // ====== 點擊單一月份圓點切換 ======
     function toggleSingleDot(ym, workerId) {
       if (!billingHistory[ym]) billingHistory[ym] = {};
       if (!billingHistory[ym][workerId]) billingHistory[ym][workerId] = { status: '待收款', note: '' };
@@ -519,9 +1062,10 @@
       const current = billingHistory[ym][workerId].status;
       billingHistory[ym][workerId].status = current === '已收' ? '待收款' : '已收';
       saveToStorage();
-      renderTable();
+      renderActiveTable();
     }
 
+    // ====== 護照延期彈窗 ======
     function openRenewPassportModal(workerId) {
       const w = workers.find(item => item.id === workerId);
       if (!w) return;
@@ -550,10 +1094,11 @@
         w.notes = (w.notes ? w.notes + "；" : "") + `護照由 ${oldDate} 延期至 ${newDate}`;
         saveToStorage();
         closeRenewPassportModal();
-        renderTable();
+        renderActiveTable();
       }
     }
 
+    // ====== 多月份連續收款 Modal ======
     function openMultiMonthModal(workerId) {
       const w = workers.find(item => item.id === workerId);
       if (!w) return;
@@ -568,20 +1113,23 @@
       for (let m = 1; m <= 12; m++) {
         const mStr = String(m).padStart(2, '0');
         const ym = `${displayYear}-${mStr}`;
-        const isActive = isWorkerActiveInMonth(w, displayYear, m);
-        const monthsInTW = getMonthsInTaiwanAtMonth(w.arrivalDate, ym);
-        const fee = calculateServiceFee(monthsInTW);
+        const feeInfo = calculateDetailedFee(w, displayYear, m);
         const isPaid = billingHistory[ym] && billingHistory[ym][w.id] && billingHistory[ym][w.id].status === '已收';
 
         const row = document.createElement('label');
-        row.className = `flex items-center justify-between p-2 rounded ${isActive ? 'hover:bg-slate-50 cursor-pointer' : 'bg-slate-50 opacity-50 cursor-not-allowed'}`;
+        row.className = `flex items-center justify-between p-2 rounded ${feeInfo.isActive ? 'hover:bg-slate-50 cursor-pointer' : 'bg-slate-50 opacity-50 cursor-not-allowed'}`;
         row.innerHTML = `
           <div class="flex items-center gap-2">
-            <input type="checkbox" value="${ym}" data-fee="${fee}" ${isPaid ? 'checked' : ''} ${!isActive ? 'disabled' : ''} onchange="recalculateMultiTotal()" class="multi-month-checkbox rounded text-indigo-600 focus:ring-indigo-500">
-            <span class="font-medium ${isPaid ? 'text-emerald-700' : 'text-slate-700'}">${ym} 月</span>
-            ${!isActive ? '<span class="text-[10px] text-slate-400 bg-slate-200 px-1.5 py-0.2 rounded">未入境</span>' : (isPaid ? '<span class="text-[10px] bg-emerald-100 text-emerald-800 px-1.5 py-0.2 rounded">綠色已收</span>' : '<span class="text-[10px] bg-rose-100 text-rose-800 px-1.5 py-0.2 rounded">紅色待收</span>')}
+            <input type="checkbox" value="${ym}" data-fee="${feeInfo.total}" ${isPaid ? 'checked' : ''} ${!feeInfo.isActive ? 'disabled' : ''} onchange="recalculateMultiTotal()" class="multi-month-checkbox rounded text-indigo-600 focus:ring-indigo-500">
+            <div>
+              <span class="font-medium ${isPaid ? 'text-emerald-700' : 'text-slate-700'}">${ym} 月</span>
+              <span class="text-[10px] text-slate-400 block">${feeInfo.isActive ? feeInfo.detailText : '尚未起聘'}</span>
+            </div>
           </div>
-          <span class="text-slate-500 font-semibold">$${fee.toLocaleString()}</span>
+          <div class="text-right">
+            <span class="text-slate-700 font-bold">$${feeInfo.total.toLocaleString()}</span>
+            ${isPaid ? '<span class="text-[10px] text-emerald-600 block">已收</span>' : (feeInfo.isActive ? '<span class="text-[10px] text-rose-600 block">待收</span>' : '')}
+          </div>
         `;
         container.appendChild(row);
       }
@@ -632,9 +1180,10 @@
 
       saveToStorage();
       closeMultiMonthModal();
-      renderTable();
+      renderActiveTable();
     }
 
+    // ====== 表單切換與儲存 ======
     function toggleTransferField() {
       const type = document.getElementById('wType').value;
       const group = document.getElementById('transferFieldGroup');
@@ -648,14 +1197,28 @@
       }
     }
 
+    function toggleSeniorMonthsField() {
+      const mode = document.getElementById('wFeeMode').value;
+      const group = document.getElementById('customMonthsGroup');
+      if (mode === 'CUSTOM_MONTHS') {
+        group.classList.remove('hidden');
+      } else {
+        group.classList.add('hidden');
+      }
+    }
+
     function openModal(isEdit = false) {
       document.getElementById('workerModal').classList.remove('hidden');
       if (!isEdit) {
         document.getElementById('workerForm').reset();
         document.getElementById('editId').value = '';
         document.getElementById('wCode').value = `ID-${String(workers.length + 1).padStart(2, '0')}`;
-        document.getElementById('modalTitle').innerText = "新增印尼移工案件";
+        document.getElementById('wFeeMode').value = "NORMAL";
+        document.getElementById('wFirstMonthMedical').value = "0";
+        document.getElementById('wFirstMonthArc').value = "3030";
+        document.getElementById('modalTitle').innerText = "新增移工案件";
         toggleTransferField();
+        toggleSeniorMonthsField();
       }
     }
 
@@ -666,8 +1229,11 @@
     function saveWorker(e) {
       e.preventDefault();
       const id = document.getElementById('editId').value || String(Date.now());
+      const existing = workers.find(w => w.id === id);
+
       const workerObj = {
         id: id,
+        status: existing ? (existing.status || 'ACTIVE') : 'ACTIVE',
         code: document.getElementById('wCode').value.trim(),
         name: document.getElementById('wName').value.trim(),
         passportNo: document.getElementById('wPassportNo').value.trim().toUpperCase(),
@@ -677,6 +1243,10 @@
         type: document.getElementById('wType').value,
         arrivalDate: document.getElementById('wArrivalDate').value,
         transferDate: document.getElementById('wTransferDate').value,
+        feeMode: document.getElementById('wFeeMode').value,
+        priorMonths: Number(document.getElementById('wPriorMonths').value || 0),
+        firstMonthMedical: Number(document.getElementById('wFirstMonthMedical').value || 0),
+        firstMonthArc: Number(document.getElementById('wFirstMonthArc').value || 0),
         contractExpiry: document.getElementById('wContractExpiry').value,
         passportExpiry: document.getElementById('wPassportExpiry').value,
         paymentMethod: document.getElementById('wPaymentMethod').value,
@@ -692,7 +1262,7 @@
 
       saveToStorage();
       closeModal();
-      renderTable();
+      renderActiveTable();
     }
 
     function editWorker(id) {
@@ -708,6 +1278,12 @@
       document.getElementById('wType').value = w.type;
       document.getElementById('wArrivalDate').value = w.arrivalDate;
       document.getElementById('wTransferDate').value = w.transferDate || '';
+      
+      document.getElementById('wFeeMode').value = w.feeMode || 'NORMAL';
+      document.getElementById('wPriorMonths').value = w.priorMonths || 0;
+      document.getElementById('wFirstMonthMedical').value = w.firstMonthMedical !== undefined ? w.firstMonthMedical : 0;
+      document.getElementById('wFirstMonthArc').value = w.firstMonthArc !== undefined ? w.firstMonthArc : 3030;
+
       document.getElementById('wContractExpiry').value = w.contractExpiry;
       document.getElementById('wPassportExpiry').value = w.passportExpiry;
       document.getElementById('wPaymentMethod').value = w.paymentMethod;
@@ -715,6 +1291,7 @@
       
       document.getElementById('modalTitle').innerText = "編輯移工資料";
       toggleTransferField();
+      toggleSeniorMonthsField();
       openModal(true);
     }
 
@@ -722,14 +1299,16 @@
       if (confirm("確定要刪除此筆移工記錄嗎？")) {
         workers = workers.filter(w => w.id !== id);
         saveToStorage();
-        renderTable();
+        renderActiveTable();
+        renderPoolTable();
+        renderReturnedTable();
       }
     }
 
     function exportCSV() {
-      let csv = "\uFEFF自訂編號,移工姓名,護照號碼,所屬雇主,電話,雇主地址,來源類型,首次入境日,承接日,聘僱到期日,護照到期日,收費方式,備註\n";
+      let csv = "\uFEFF狀態,自訂編號,移工姓名,護照號碼,所屬雇主,電話,雇主地址,來源類型,收費模式,入境/起聘日,承接日,聘僱到期日,護照到期日,收費方式,備註\n";
       workers.forEach(w => {
-        csv += `"${w.code || ''}","${w.name}","${w.passportNo || ''}","${w.employer}","${w.phone || ''}","${w.address || ''}","${w.type}","${w.arrivalDate}","${w.transferDate || ''}","${w.contractExpiry}","${w.passportExpiry}","${w.paymentMethod}","${w.notes || ''}"\n`;
+        csv += `"${w.status || 'ACTIVE'}","${w.code || ''}","${w.name}","${w.passportNo || ''}","${w.employer}","${w.phone || ''}","${w.address || ''}","${w.type}","${w.feeMode || 'NORMAL'}","${w.arrivalDate}","${w.transferDate || ''}","${w.contractExpiry}","${w.passportExpiry}","${w.paymentMethod}","${w.notes || ''}"\n`;
       });
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
@@ -741,7 +1320,6 @@
       document.body.removeChild(link);
     }
 
-    // ====== 備份與還原功能 ======
     function backupJSON() {
       const data = {
         workers: workers,
@@ -770,7 +1348,7 @@
               workers = parsed.workers;
               billingHistory = parsed.billingHistory;
               saveToStorage();
-              renderTable();
+              renderActiveTable();
               alert("資料還原成功！");
             }
           } else {
@@ -784,7 +1362,7 @@
     }
 
     initYearSelector();
-    renderTable();
+    renderActiveTable();
   </script>
 </body>
 </html>
