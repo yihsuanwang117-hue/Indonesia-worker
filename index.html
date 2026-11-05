@@ -16,9 +16,16 @@
     <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap justify-between items-center gap-3">
       <div class="flex items-center gap-2">
         <span class="text-xl font-bold tracking-wide">印尼移工管家 (IndoWorker Pro)</span>
-        <span class="text-xs bg-indigo-700 px-2.5 py-0.5 rounded-full text-indigo-100">跨年度擴充版</span>
+        <span class="text-xs bg-indigo-700 px-2.5 py-0.5 rounded-full text-indigo-100">護照號碼擴充版</span>
       </div>
-      <div class="flex items-center gap-2">
+      <div class="flex flex-wrap items-center gap-2">
+        <button onclick="backupJSON()" title="下載目前所有移工與收費紀錄到電腦存檔" class="bg-indigo-700 hover:bg-indigo-600 text-white text-xs px-2.5 py-1.5 rounded shadow">
+          💾 備份資料
+        </button>
+        <button onclick="document.getElementById('restoreFileInput').click()" title="從備份檔還原" class="bg-indigo-700 hover:bg-indigo-600 text-white text-xs px-2.5 py-1.5 rounded shadow">
+          📂 還原備份
+        </button>
+        <input type="file" id="restoreFileInput" onchange="restoreJSON(event)" class="hidden" accept=".json">
         <button onclick="exportCSV()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-3 py-1.5 rounded shadow">
           匯出 Excel (CSV)
         </button>
@@ -69,13 +76,13 @@
     <!-- 主名冊操作工具列 -->
     <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden p-4 space-y-4">
       <div class="flex flex-wrap items-center justify-between gap-3">
-        <!-- 搜尋列 -->
+        <!-- 搜尋列（支援編號、姓名、護照號、雇主、電話、地址） -->
         <div class="relative w-80">
-          <input type="text" id="searchInput" oninput="renderTable()" placeholder="搜尋編號、姓名、雇主、電話、地址..." class="w-full pl-8 pr-3 py-1.5 text-xs border border-slate-300 rounded focus:outline-indigo-500">
+          <input type="text" id="searchInput" oninput="renderTable()" placeholder="搜尋編號、姓名、護照號、雇主、地址..." class="w-full pl-8 pr-3 py-1.5 text-xs border border-slate-300 rounded focus:outline-indigo-500">
           <svg class="w-4 h-4 text-slate-400 absolute left-2.5 top-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
         </div>
 
-        <!-- 直覺化跨年度切換器 (支援 2028, 2029 及無限往後) -->
+        <!-- 直覺化跨年度切換器 -->
         <div class="flex flex-wrap items-center gap-4">
           <div class="flex items-center gap-1 bg-slate-100 p-1 rounded-lg border border-slate-200">
             <button onclick="shiftYear(-1)" title="上一年" class="w-6 h-6 flex items-center justify-center rounded bg-white hover:bg-slate-200 text-slate-600 shadow-sm text-xs font-bold transition">◀</button>
@@ -98,7 +105,7 @@
           <thead>
             <tr class="bg-slate-100 text-slate-600 border-b border-slate-200">
               <th class="p-3 w-20">編號</th>
-              <th class="p-3">移工姓名 / 國籍</th>
+              <th class="p-3">移工姓名 / 護照號碼</th>
               <th class="p-3 min-w-[200px]">所屬雇主 / 電話 / 地址</th>
               <th class="p-3">來源類型</th>
               <th class="p-3">首次入境日</th>
@@ -132,6 +139,10 @@
           <p id="renewWorkerName" class="font-bold text-slate-800 text-sm"></p>
         </div>
         <div>
+          <label class="block font-medium mb-1">護照號碼 (換發新照若變更可在此修改)</label>
+          <input type="text" id="renewPassportNo" class="w-full border rounded px-2.5 py-1.5 uppercase focus:outline-indigo-500">
+        </div>
+        <div>
           <label class="block text-slate-500 mb-1">原本護照到期日</label>
           <p id="renewOldDate" class="text-slate-600"></p>
         </div>
@@ -141,7 +152,7 @@
         </div>
         <div class="pt-2 flex justify-end gap-2 border-t border-slate-100">
           <button type="button" onclick="closeRenewPassportModal()" class="px-3 py-1.5 rounded border border-slate-300 text-slate-600">取消</button>
-          <button type="submit" class="px-4 py-1.5 rounded bg-indigo-600 hover:bg-indigo-700 text-white font-medium">更新到期日</button>
+          <button type="submit" class="px-4 py-1.5 rounded bg-indigo-600 hover:bg-indigo-700 text-white font-medium">更新並儲存</button>
         </div>
       </form>
     </div>
@@ -244,14 +255,18 @@
           </div>
         </div>
 
-        <div class="grid grid-cols-2 gap-3">
+        <div class="grid grid-cols-3 gap-3">
           <div>
-            <label class="block font-medium mb-1">聘僱許可到期日 *</label>
-            <input type="date" id="wContractExpiry" required class="w-full border rounded px-2 py-1.5 focus:outline-indigo-500">
+            <label class="block font-medium mb-1">護照號碼</label>
+            <input type="text" id="wPassportNo" placeholder="例: C1234567" class="w-full border rounded px-2.5 py-1.5 uppercase focus:outline-indigo-500">
           </div>
           <div>
             <label class="block font-medium mb-1">護照到期日 *</label>
-            <input type="date" id="wPassportExpiry" required class="w-full border rounded px-2 py-1.5 focus:outline-indigo-500">
+            <input type="date" id="wPassportExpiry" required class="w-full border rounded px-2.5 py-1.5 focus:outline-indigo-500">
+          </div>
+          <div>
+            <label class="block font-medium mb-1">聘僱許可到期日 *</label>
+            <input type="date" id="wContractExpiry" required class="w-full border rounded px-2.5 py-1.5 focus:outline-indigo-500">
           </div>
         </div>
 
@@ -279,11 +294,13 @@
   </div>
 
   <script>
+    // 預設示範資料（僅在第一次全空時載入，有舊資料時會直接讀取使用者已輸入的內容）
     const DEFAULT_DATA = [
       {
         id: "1",
         code: "ID-01",
         name: "SITI AMINAH (阿米)",
+        passportNo: "C1234567",
         employer: "陳大明",
         phone: "0912-345-678",
         address: "新北市汐止區大同路二段123號",
@@ -294,33 +311,16 @@
         passportExpiry: "2030-01-20",
         paymentMethod: "雇主代扣",
         notes: "5月剛入境"
-      },
-      {
-        id: "2",
-        code: "ID-02",
-        name: "SURATMI (蘇拉)",
-        employer: "林媽媽",
-        phone: "0988-112-233",
-        address: "台北市大安區信義路四段56號",
-        type: "承接",
-        arrivalDate: "2024-03-01",
-        transferDate: "2026-02-15",
-        contractExpiry: "2027-03-01",
-        passportExpiry: "2027-02-15",
-        paymentMethod: "移工自繳(匯款)",
-        notes: "2月起承接"
       }
     ];
 
     let workers = JSON.parse(localStorage.getItem('indo_workers_db')) || DEFAULT_DATA;
     let billingHistory = JSON.parse(localStorage.getItem('indo_billing_db')) || {};
     
-    // 預設年份自動抓當前年 (2026)
     const currentYear = new Date().getFullYear();
     let displayYear = currentYear;
     let activeWorkerForMulti = null;
 
-    // 初始化年份選單（自動產生 前2年 到 後6年，涵蓋 2024 ~ 2032）
     function initYearSelector() {
       const select = document.getElementById('yearSelect');
       select.innerHTML = '';
@@ -343,12 +343,9 @@
       renderTable();
     }
 
-    // 點擊 ◀ 或 ▶ 箭頭切換年份
     function shiftYear(offset) {
       const newYear = displayYear + offset;
       const select = document.getElementById('yearSelect');
-      
-      // 若超出目前選單範圍，動態補上該年份選項
       if (![...select.options].some(o => Number(o.value) === newYear)) {
         const opt = document.createElement('option');
         opt.value = newYear;
@@ -414,7 +411,8 @@
         const employer = (w.employer || '').toLowerCase();
         const phone = (w.phone || '').toLowerCase();
         const address = (w.address || '').toLowerCase();
-        return code.includes(keyword) || name.includes(keyword) || employer.includes(keyword) || phone.includes(keyword) || address.includes(keyword);
+        const passportNo = (w.passportNo || '').toLowerCase();
+        return code.includes(keyword) || name.includes(keyword) || employer.includes(keyword) || phone.includes(keyword) || address.includes(keyword) || passportNo.includes(keyword);
       });
 
       filtered.forEach(w => {
@@ -482,6 +480,7 @@
           </td>
           <td class="p-3">
             <div class="font-bold text-slate-800">${w.name}</div>
+            <div class="text-[10px] text-indigo-600 font-mono font-medium">${w.passportNo ? `🪪 ${w.passportNo}` : '<span class="text-slate-400">未填護照號</span>'}</div>
             <div class="text-[10px] text-slate-400">印尼籍 🇮🇩</div>
           </td>
           <td class="p-3">
@@ -528,6 +527,7 @@
       if (!w) return;
       document.getElementById('renewWorkerId').value = w.id;
       document.getElementById('renewWorkerName').innerText = `${w.name} (${w.code || ''})`;
+      document.getElementById('renewPassportNo').value = w.passportNo || '';
       document.getElementById('renewOldDate').innerText = w.passportExpiry;
       document.getElementById('renewNewDate').value = '';
       document.getElementById('renewPassportModal').classList.remove('hidden');
@@ -541,10 +541,12 @@
       e.preventDefault();
       const id = document.getElementById('renewWorkerId').value;
       const newDate = document.getElementById('renewNewDate').value;
+      const newPassportNo = document.getElementById('renewPassportNo').value.trim().toUpperCase();
       const w = workers.find(item => item.id === id);
       if (w) {
         const oldDate = w.passportExpiry;
         w.passportExpiry = newDate;
+        if (newPassportNo) w.passportNo = newPassportNo;
         w.notes = (w.notes ? w.notes + "；" : "") + `護照由 ${oldDate} 延期至 ${newDate}`;
         saveToStorage();
         closeRenewPassportModal();
@@ -668,6 +670,7 @@
         id: id,
         code: document.getElementById('wCode').value.trim(),
         name: document.getElementById('wName').value.trim(),
+        passportNo: document.getElementById('wPassportNo').value.trim().toUpperCase(),
         employer: document.getElementById('wEmployer').value.trim(),
         phone: document.getElementById('wPhone').value.trim(),
         address: document.getElementById('wAddress').value.trim(),
@@ -698,6 +701,7 @@
       document.getElementById('editId').value = w.id;
       document.getElementById('wCode').value = w.code || '';
       document.getElementById('wName').value = w.name;
+      document.getElementById('wPassportNo').value = w.passportNo || '';
       document.getElementById('wEmployer').value = w.employer;
       document.getElementById('wPhone').value = w.phone || '';
       document.getElementById('wAddress').value = w.address || '';
@@ -723,9 +727,9 @@
     }
 
     function exportCSV() {
-      let csv = "\uFEFF自訂編號,移工姓名,所屬雇主,電話,雇主地址,來源類型,首次入境日,承接日,聘僱到期日,護照到期日,收費方式,備註\n";
+      let csv = "\uFEFF自訂編號,移工姓名,護照號碼,所屬雇主,電話,雇主地址,來源類型,首次入境日,承接日,聘僱到期日,護照到期日,收費方式,備註\n";
       workers.forEach(w => {
-        csv += `"${w.code || ''}","${w.name}","${w.employer}","${w.phone || ''}","${w.address || ''}","${w.type}","${w.arrivalDate}","${w.transferDate || ''}","${w.contractExpiry}","${w.passportExpiry}","${w.paymentMethod}","${w.notes || ''}"\n`;
+        csv += `"${w.code || ''}","${w.name}","${w.passportNo || ''}","${w.employer}","${w.phone || ''}","${w.address || ''}","${w.type}","${w.arrivalDate}","${w.transferDate || ''}","${w.contractExpiry}","${w.passportExpiry}","${w.paymentMethod}","${w.notes || ''}"\n`;
       });
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
@@ -737,7 +741,48 @@
       document.body.removeChild(link);
     }
 
-    // 啟動初始化
+    // ====== 備份與還原功能 ======
+    function backupJSON() {
+      const data = {
+        workers: workers,
+        billingHistory: billingHistory,
+        exportTime: new Date().toISOString()
+      };
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.setAttribute("href", url);
+      link.setAttribute("download", `移工管理系統備份_${new Date().toISOString().slice(0,10)}.json`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    function restoreJSON(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        try {
+          const parsed = JSON.parse(evt.target.result);
+          if (parsed.workers && parsed.billingHistory) {
+            if (confirm(`確認還原備份？這將載入 ${parsed.workers.length} 筆移工資料。`)) {
+              workers = parsed.workers;
+              billingHistory = parsed.billingHistory;
+              saveToStorage();
+              renderTable();
+              alert("資料還原成功！");
+            }
+          } else {
+            alert("備份檔案格式不符合！");
+          }
+        } catch(err) {
+          alert("讀取檔案失敗：" + err.message);
+        }
+      };
+      reader.readAsText(file);
+    }
+
     initYearSelector();
     renderTable();
   </script>
