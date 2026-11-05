@@ -597,54 +597,65 @@
     }
 
     // 建立民國年/月/日下拉組件 (支援 allowUnknown 允許選擇「✕ 未知 (缺護照影本)」)
-    function setupRocDatePicker(containerId, initialDateStr = '', allowUnknown = false) {
-      const container = document.getElementById(containerId);
-      if (!container) return;
+   // 建立日期下拉組件 (支援民國年或西元年、支援未知)
+function setupRocDatePicker(containerId, initialDateStr = '', allowUnknown = false, isWestern = false) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
 
-      const isUnknown = allowUnknown && (!initialDateStr || initialDateStr.trim() === '');
-      let rocY = 115;
-      let month = 1;
-      let day = 1;
+  const isUnknown = allowUnknown && (!initialDateStr || initialDateStr.trim() === '');
+  let targetY = isWestern ? 2030 : 115;
+  let month = 1;
+  let day = 1;
 
-      if (!isUnknown && initialDateStr && initialDateStr.includes('-')) {
-        const p = initialDateStr.split('-');
-        rocY = Number(p[0]) - 1911;
-        month = Number(p[1]);
-        day = Number(p[2]);
-      } else if (!isUnknown) {
-        const n = new Date();
-        rocY = n.getFullYear() - 1911;
-        month = n.getMonth() + 1;
-        day = n.getDate();
-      }
+  if (!isUnknown && initialDateStr && initialDateStr.includes('-')) {
+    const p = initialDateStr.split('-');
+    targetY = isWestern ? Number(p[0]) : (Number(p[0]) - 1911);
+    month = Number(p[1]);
+    day = Number(p[2]);
+  } else if (!isUnknown) {
+    const n = new Date();
+    targetY = isWestern ? n.getFullYear() : (n.getFullYear() - 1911);
+    month = n.getMonth() + 1;
+    day = n.getDate();
+  }
 
-      let yOptions = '';
-      if (allowUnknown) {
-        yOptions += `<option value="UNKNOWN" ${isUnknown ? 'selected' : ''} class="text-rose-600 font-bold">✕ 未知 (缺護照影本)</option>`;
-      }
-      for (let y = 100; y <= 126; y++) {
-        yOptions += `<option value="${y}" ${(!isUnknown && y === rocY) ? 'selected' : ''}>民國 ${y} 年</option>`;
-      }
+  let yOptions = '';
+  if (allowUnknown) {
+    yOptions += `<option value="UNKNOWN" ${isUnknown ? 'selected' : ''} class="text-rose-600 font-bold">✕ 未知 (缺護照影本)</option>`;
+  }
 
-      let mOptions = '';
-      for (let m = 1; m <= 12; m++) {
-        mOptions += `<option value="${m}" ${(!isUnknown && m === month) ? 'selected' : ''}>${m} 月</option>`;
-      }
-
-      let dOptions = '';
-      for (let d = 1; d <= 31; d++) {
-        dOptions += `<option value="${d}" ${(!isUnknown && d === day) ? 'selected' : ''}>${d} 日</option>`;
-      }
-
-      const disabledAttr = isUnknown ? 'disabled' : '';
-      const disabledClass = isUnknown ? 'bg-slate-100 text-slate-400' : 'bg-white';
-
-      container.innerHTML = `
-        <select onchange="onRocYearChange('${containerId}')" class="roc-year border rounded px-1.5 py-1.5 bg-white text-xs flex-1 focus:outline-indigo-500">${yOptions}</select>
-        <select class="roc-month border rounded px-1 py-1.5 text-xs w-16 focus:outline-indigo-500 ${disabledClass}" ${disabledAttr}>${mOptions}</select>
-        <select class="roc-day border rounded px-1 py-1.5 text-xs w-16 focus:outline-indigo-500 ${disabledClass}" ${disabledAttr}>${dOptions}</select>
-      `;
+  if (isWestern) {
+    // 護照專用：西元 2024 ~ 2038 年
+    for (let y = 2024; y <= 2038; y++) {
+      yOptions += `<option value="${y}" ${(!isUnknown && y === targetY) ? 'selected' : ''}>西元 ${y} 年</option>`;
     }
+  } else {
+    // 官方業務專用：民國 100 ~ 126 年
+    for (let y = 100; y <= 126; y++) {
+      yOptions += `<option value="${y}" ${(!isUnknown && y === targetY) ? 'selected' : ''}>民國 ${y} 年</option>`;
+    }
+  }
+
+  let mOptions = '';
+  for (let m = 1; m <= 12; m++) {
+    mOptions += `<option value="${m}" ${(!isUnknown && m === month) ? 'selected' : ''}>${m} 月</option>`;
+  }
+
+  let dOptions = '';
+  for (let d = 1; d <= 31; d++) {
+    dOptions += `<option value="${d}" ${(!isUnknown && d === day) ? 'selected' : ''}>${d} 日</option>`;
+  }
+
+  const disabledAttr = isUnknown ? 'disabled' : '';
+  const disabledClass = isUnknown ? 'bg-slate-100 text-slate-400' : 'bg-white';
+
+  // 加入 data-western 屬性以利讀取時判斷
+  container.innerHTML = `
+    <select onchange="onRocYearChange('${containerId}')" data-western="${isWestern}" class="roc-year border rounded px-1.5 py-1.5 bg-white text-xs flex-1 focus:outline-indigo-500">${yOptions}</select>
+    <select class="roc-month border rounded px-1 py-1.5 text-xs w-16 focus:outline-indigo-500 ${disabledClass}" ${disabledAttr}>${mOptions}</select>
+    <select class="roc-day border rounded px-1 py-1.5 text-xs w-16 focus:outline-indigo-500 ${disabledClass}" ${disabledAttr}>${dOptions}</select>
+  `;
+}
 
     // 當年份選為 UNKNOWN 時，自動將月、日反灰鎖定
     function onRocYearChange(containerId) {
@@ -668,19 +679,20 @@
     }
 
     // 取得選取日期 (若選 UNKNOWN 則回傳空字串 '')
-    function getRocDateValue(containerId) {
-      const container = document.getElementById(containerId);
-      if (!container) return '';
-      const ySelect = container.querySelector('.roc-year');
-      const mSelect = container.querySelector('.roc-month');
-      const dSelect = container.querySelector('.roc-day');
-      if (!ySelect || ySelect.value === 'UNKNOWN') return '';
+function getRocDateValue(containerId) {
+  const container = document.getElementById(containerId);
+  if (!container) return '';
+  const ySelect = container.querySelector('.roc-year');
+  const mSelect = container.querySelector('.roc-month');
+  const dSelect = container.querySelector('.roc-day');
+  if (!ySelect || ySelect.value === 'UNKNOWN') return '';
 
-      const adYear = Number(ySelect.value) + 1911;
-      const mStr = String(mSelect.value).padStart(2, '0');
-      const dStr = String(dSelect.value).padStart(2, '0');
-      return `${adYear}-${mStr}-${dStr}`;
-    }
+  const isWestern = ySelect.getAttribute('data-western') === 'true';
+  const adYear = isWestern ? Number(ySelect.value) : (Number(ySelect.value) + 1911);
+  const mStr = String(mSelect.value).padStart(2, '0');
+  const dStr = String(dSelect.value).padStart(2, '0');
+  return `${adYear}-${mStr}-${dStr}`;
+}
 
     let workers = JSON.parse(localStorage.getItem('indo_workers_db')) || [];
     let billingHistory = JSON.parse(localStorage.getItem('indo_billing_db')) || {};
@@ -881,20 +893,22 @@ function getContractMonthIndex(worker, year, month) {
         if (contDays <= 90) contractAlertCount++;
 
         // 護照顯示欄位 (若缺影本，顯示橘色未知標籤)
-        let passBadge = '';
-        if (isMissingPassport) {
-          passBadge = `<div class="flex items-center gap-1">
-            <span class="bg-rose-50 text-rose-700 px-1.5 py-0.5 rounded font-bold text-[10px] border border-rose-200">⚠️ 未知(缺影本)</span>
-            <button onclick="openRenewPassportModal('${w.id}')" title="補登護照到期日" class="text-[10px] bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-300 px-1.5 rounded font-semibold">補件</button>
-          </div>`;
-        } else {
-          passBadge = `<div class="flex items-center gap-1">
-            <span class="${passDays < 0 ? 'text-rose-600 font-bold' : (passDays <= 180 ? 'text-amber-600 font-semibold' : 'text-slate-600')}">
-              ${toRocDateString(w.passportExpiry)}
-            </span>
-            <button onclick="openRenewPassportModal('${w.id}')" title="換照延期" class="text-[10px] bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 border px-1 rounded text-slate-500">延</button>
-          </div>`;
-        }
+       let passBadge = '';
+if (isMissingPassport) {
+  passBadge = `<div class="flex items-center gap-1">
+    <span class="bg-rose-50 text-rose-700 px-1.5 py-0.5 rounded font-bold text-[10px] border border-rose-200">⚠️ 未知(缺影本)</span>
+    <button onclick="openRenewPassportModal('${w.id}')" title="補登護照到期日" class="text-[10px] bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-300 px-1.5 rounded font-semibold">補件</button>
+  </div>`;
+} else {
+  // 將 2030-05-10 轉為 2030/05/10 西元格式顯示
+  const westernPassportDate = w.passportExpiry ? w.passportExpiry.replace(/-/g, '/') : '-';
+  passBadge = `<div class="flex items-center gap-1">
+    <span class="${passDays < 0 ? 'text-rose-600 font-bold' : (passDays <= 180 ? 'text-amber-600 font-semibold' : 'text-slate-600')}">
+      ${westernPassportDate}
+    </span>
+    <button onclick="openRenewPassportModal('${w.id}')" title="換照延期" class="text-[10px] bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 border px-1 rounded text-slate-500">延</button>
+  </div>`;
+}
 
         let contBadge = `<span class="${contDays < 0 ? 'text-rose-600 font-bold' : (contDays <= 90 ? 'text-purple-600 font-semibold' : 'text-slate-600')}">
           ${toRocDateString(w.contractExpiry)}
@@ -1024,8 +1038,7 @@ function getContractMonthIndex(worker, year, month) {
             <div class="text-slate-600">${toRocDateString(w.contractExpiry)} 止</div>
             <div class="text-[10px] text-indigo-600 font-medium">首次入境：${toRocDateString(w.arrivalDate)}</div>
           </td>
-          <td class="p-3 font-mono text-slate-600">${isMissingPassport ? '<span class="text-rose-600 font-semibold">未知</span>' : toRocDateString(w.passportExpiry)}</td>
-          <td class="p-3 text-center space-x-2">
+<td class="p-3 font-mono text-slate-600">${isMissingPassport ? '<span class="text-rose-600 font-semibold">未知</span>' : (w.passportExpiry ? w.passportExpiry.replace(/-/g, '/') : '-')}</td>          <td class="p-3 text-center space-x-2">
             <button onclick="openMatchModal('${w.id}')" class="bg-sky-600 hover:bg-sky-700 text-white font-medium px-3 py-1 rounded shadow-sm text-xs">
               🤝 媒合新雇主承接
             </button>
@@ -1218,20 +1231,21 @@ function getContractMonthIndex(worker, year, month) {
     }
 
     // ====== 護照延期/補件彈窗 ======
-    function openRenewPassportModal(workerId) {
-      const w = workers.find(item => item.id === workerId);
-      if (!w) return;
-      document.getElementById('renewWorkerId').value = w.id;
-      document.getElementById('renewWorkerName').innerText = `${w.name} (${w.code || ''})`;
-      document.getElementById('renewPassportNo').value = w.passportNo || '';
-      
-      const isMissing = (!w.passportExpiry || w.passportExpiry.trim() === '');
-      document.getElementById('renewOldDate').innerText = isMissing ? '目前狀態：缺少護照影本 (到期日未知)' : `民國 ${toRocDateString(w.passportExpiry)}`;
-      
-      // 延期/補件彈窗也允許選擇「未知」或直接填入民國年月日
-      setupRocDatePicker('rocGroup_renewNewDate', w.passportExpiry || '', true);
-      document.getElementById('renewPassportModal').classList.remove('hidden');
-    }
+  function openRenewPassportModal(workerId) {
+  const w = workers.find(item => item.id === workerId);
+  if (!w) return;
+  document.getElementById('renewWorkerId').value = w.id;
+  document.getElementById('renewWorkerName').innerText = `${w.name} (${w.code || ''})`;
+  document.getElementById('renewPassportNo').value = w.passportNo || '';
+  
+  const isMissing = (!w.passportExpiry || w.passportExpiry.trim() === '');
+  // 顯示舊日期時使用西元格式
+  document.getElementById('renewOldDate').innerText = isMissing ? '目前狀態：缺少護照影本 (到期日未知)' : `西元 ${w.passportExpiry.replace(/-/g, '/')}`;
+  
+  // 第四個參數設為 true，彈窗中的選單就會是西元 (2024~2038)
+  setupRocDatePicker('rocGroup_renewNewDate', w.passportExpiry || '', true, true);
+  document.getElementById('renewPassportModal').classList.remove('hidden');
+}
 
     function closeRenewPassportModal() {
       document.getElementById('renewPassportModal').classList.add('hidden');
@@ -1362,32 +1376,56 @@ function getContractMonthIndex(worker, year, month) {
       }
     }
 
-    function openModal(isEdit = false) {
-      document.getElementById('workerModal').classList.remove('hidden');
-      if (!isEdit) {
-        document.getElementById('workerForm').reset();
-        document.getElementById('editId').value = '';
-        document.getElementById('wCode').value = `ID-${String(workers.length + 1).padStart(2, '0')}`;
-        document.getElementById('wFeeMode').value = "NORMAL";
-        document.getElementById('wFirstMonthMedical').value = "0";
-        document.getElementById('wFirstMonthArc').value = "3030";
-        document.getElementById('modalTitle').innerText = "新增移工案件";
-        
-        setupRocDatePicker('rocGroup_wArrivalDate', new Date().toISOString().slice(0,10), false);
-        setupRocDatePicker('rocGroup_wTransferDate', new Date().toISOString().slice(0,10), false);
-        
-        const d3 = new Date();
-        d3.setFullYear(d3.getFullYear() + 3);
-        setupRocDatePicker('rocGroup_wContractExpiry', d3.toISOString().slice(0,10), false);
-        
-        // 護照到期日允許選「未知 (缺護照影本)」
-        setupRocDatePicker('rocGroup_wPassportExpiry', '', true);
+function openModal(isEdit = false) {
+  document.getElementById('workerModal').classList.remove('hidden');
+  if (!isEdit) {
+    document.getElementById('workerForm').reset();
+    document.getElementById('editId').value = '';
+    document.getElementById('wCode').value = `ID-${String(workers.length + 1).padStart(2, '0')}`;
+    document.getElementById('wFeeMode').value = "NORMAL";
+    document.getElementById('wFirstMonthMedical').value = "0";
+    document.getElementById('wFirstMonthArc').value = "3030";
+    document.getElementById('modalTitle').innerText = "新增移工案件";
+    
+    // 入境日與承接日維持民國年 (最後一個參數是 false)
+    const todayStr = new Date().toISOString().slice(0, 10);
+    setupRocDatePicker('rocGroup_wArrivalDate', todayStr, false, false);
+    setupRocDatePicker('rocGroup_wTransferDate', todayStr, false, false);
+    
+    // 預設聘約到期日：入境日 + 3 年 (民國年)
+    const d3 = new Date();
+    d3.setFullYear(d3.getFullYear() + 3);
+    setupRocDatePicker('rocGroup_wContractExpiry', d3.toISOString().slice(0, 10), false, false);
+    
+    // 護照到期日：改用西元年 (最後一個參數設為 true)
+    setupRocDatePicker('rocGroup_wPassportExpiry', '', true, true);
 
-        toggleTransferField();
-        toggleSeniorMonthsField();
+    // ★★★ 自動連動核心邏輯 ★★★
+    // 監聽入境日的 年、月、日 下拉選單，只要變動，聘僱到期日自動同步變成「年 + 3，月日相同」
+    const arrivalContainer = document.getElementById('rocGroup_wArrivalDate');
+    const syncExpiry = () => {
+      // 只有在「國外引進」時自動計算 3 年；國內承接案通常不足 3 年，交由人工自訂
+      if (document.getElementById('wType').value === '引進') {
+        const arrY = Number(arrivalContainer.querySelector('.roc-year').value);
+        const arrM = arrivalContainer.querySelector('.roc-month').value;
+        const arrD = arrivalContainer.querySelector('.roc-day').value;
+        
+        const expContainer = document.getElementById('rocGroup_wContractExpiry');
+        if (expContainer) {
+          expContainer.querySelector('.roc-year').value = arrY + 3;
+          expContainer.querySelector('.roc-month').value = arrM;
+          expContainer.querySelector('.roc-day').value = arrD;
+        }
       }
-    }
+    };
+    arrivalContainer.querySelectorAll('select').forEach(sel => {
+      sel.onchange = syncExpiry;
+    });
 
+    toggleTransferField();
+    toggleSeniorMonthsField();
+  }
+}
     function closeModal() {
       document.getElementById('workerModal').classList.add('hidden');
     }
@@ -1431,35 +1469,38 @@ function getContractMonthIndex(worker, year, month) {
       renderActiveTable();
     }
 
-    function editWorker(id) {
-      const w = workers.find(item => item.id === id);
-      if (!w) return;
-      document.getElementById('editId').value = w.id;
-      document.getElementById('wCode').value = w.code || '';
-      document.getElementById('wName').value = w.name;
-      document.getElementById('wPassportNo').value = w.passportNo || '';
-      document.getElementById('wEmployer').value = w.employer;
-      document.getElementById('wPhone').value = w.phone || '';
-      document.getElementById('wAddress').value = w.address || '';
-      document.getElementById('wType').value = w.type;
-      
-      setupRocDatePicker('rocGroup_wArrivalDate', w.arrivalDate || '', false);
-      setupRocDatePicker('rocGroup_wTransferDate', w.transferDate || '', false);
-      setupRocDatePicker('rocGroup_wContractExpiry', w.contractExpiry || '', false);
-      setupRocDatePicker('rocGroup_wPassportExpiry', w.passportExpiry || '', true);
+  function editWorker(id) {
+  const w = workers.find(item => item.id === id);
+  if (!w) return;
+  document.getElementById('editId').value = w.id;
+  document.getElementById('wCode').value = w.code || '';
+  document.getElementById('wName').value = w.name;
+  document.getElementById('wPassportNo').value = w.passportNo || '';
+  document.getElementById('wEmployer').value = w.employer;
+  document.getElementById('wPhone').value = w.phone || '';
+  document.getElementById('wAddress').value = w.address || '';
+  document.getElementById('wType').value = w.type;
+  
+  // 入境日、承接日、聘期到期日為民國年 (false)
+  setupRocDatePicker('rocGroup_wArrivalDate', w.arrivalDate || '', false, false);
+  setupRocDatePicker('rocGroup_wTransferDate', w.transferDate || '', false, false);
+  setupRocDatePicker('rocGroup_wContractExpiry', w.contractExpiry || '', false, false);
+  
+  // 護照到期日為西元年 (最後參數設為 true)
+  setupRocDatePicker('rocGroup_wPassportExpiry', w.passportExpiry || '', true, true);
 
-      document.getElementById('wFeeMode').value = w.feeMode || 'NORMAL';
-      document.getElementById('wPriorMonths').value = w.priorMonths || 0;
-      document.getElementById('wFirstMonthMedical').value = w.firstMonthMedical !== undefined ? w.firstMonthMedical : 0;
-      document.getElementById('wFirstMonthArc').value = w.firstMonthArc !== undefined ? w.firstMonthArc : 3030;
-      document.getElementById('wPaymentMethod').value = w.paymentMethod;
-      document.getElementById('wNotes').value = w.notes || '';
-      
-      document.getElementById('modalTitle').innerText = "編輯移工資料";
-      toggleTransferField();
-      toggleSeniorMonthsField();
-      openModal(true);
-    }
+  document.getElementById('wFeeMode').value = w.feeMode || 'NORMAL';
+  document.getElementById('wPriorMonths').value = w.priorMonths || 0;
+  document.getElementById('wFirstMonthMedical').value = w.firstMonthMedical !== undefined ? w.firstMonthMedical : 0;
+  document.getElementById('wFirstMonthArc').value = w.firstMonthArc !== undefined ? w.firstMonthArc : 3030;
+  document.getElementById('wPaymentMethod').value = w.paymentMethod;
+  document.getElementById('wNotes').value = w.notes || '';
+  
+  document.getElementById('modalTitle').innerText = "編輯移工資料";
+  toggleTransferField();
+  toggleSeniorMonthsField();
+  openModal(true);
+}
 
     function deleteWorker(id) {
       if (confirm("確定要刪除此筆移工記錄嗎？")) {
