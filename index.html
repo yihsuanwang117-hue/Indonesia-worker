@@ -743,18 +743,25 @@
       return Math.round((target - now) / (1000 * 60 * 60 * 24));
     }
 
-    function getContractMonthIndex(worker, year, month) {
-      const effectiveDateStr = worker.type === '承接' && worker.transferDate ? worker.transferDate : worker.arrivalDate;
-      if (!effectiveDateStr) return -1;
-      
-      const start = new Date(effectiveDateStr);
-      const targetDate = new Date(year, month - 1, 1);
-      const startMonthDate = new Date(start.getFullYear(), start.getMonth(), 1);
+function getContractMonthIndex(worker, year, month) {
+  const effectiveDateStr = worker.type === '承接' && worker.transferDate ? worker.transferDate : worker.arrivalDate;
+  if (!effectiveDateStr) return -1;
+  
+  const start = new Date(effectiveDateStr);
+  
+  // 第一期服務費到期日：入境/起聘日往後推滿整整 1 個月 (例如 10/18 入境，第一期收費日在 11/18)
+  const firstBillDate = new Date(start);
+  firstBillDate.setMonth(firstBillDate.getMonth() + 1);
 
-      if (targetDate < startMonthDate) return -1;
+  const targetDate = new Date(year, month - 1, 1);
+  const firstBillMonthDate = new Date(firstBillDate.getFullYear(), firstBillDate.getMonth(), 1);
 
-      return (targetDate.getFullYear() - startMonthDate.getFullYear()) * 12 + (targetDate.getMonth() - startMonthDate.getMonth()) + 1;
-    }
+  // 若檢視月份早於「第一期收費月份」，代表尚未做滿一個月，不需收費 (顯示為灰色)
+  if (targetDate < firstBillMonthDate) return -1;
+
+  // 剛好在第一期收費月份時回傳 1 (第 1 個月服務費)，之後以此類推
+  return (targetDate.getFullYear() - firstBillMonthDate.getFullYear()) * 12 + (targetDate.getMonth() - firstBillMonthDate.getMonth()) + 1;
+}
 
     function calculateDetailedFee(worker, year, month) {
       const contractMonth = getContractMonthIndex(worker, year, month);
