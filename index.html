@@ -476,10 +476,11 @@
                 <option value="CUSTOM_MONTHS">自訂累計在台年資 (接續舊年資計算)</option>
               </select>
             </div>
-            <div id="customMonthsGroup" class="hidden">
-              <label class="block font-medium text-amber-800 mb-1">本次入境前已累計月數</label>
-              <input type="number" id="wPriorMonths" value="0" min="0" max="144" class="w-full border border-amber-300 rounded px-2 py-1.5 bg-white focus:outline-amber-500">
-            </div>
+ <div id="customMonthsGroup">
+  <label class="block font-medium text-amber-800 mb-1">承接前在台已累計月數 (若滿1年選1700，此處填累計月數)</label>
+  <input type="number" id="wPriorMonths" value="0" min="0" max="144" placeholder="例如填 17" class="w-full border border-amber-300 rounded px-2 py-1.5 bg-white focus:outline-amber-500">
+  <span class="text-[10px] text-amber-700 block mt-0.5">※ 如填 17，新雇主承接後前 7 個月收 $1,700，滿 24 個月後自動降為 $1,500</span>
+</div>
           </div>
         </div>
 
@@ -728,19 +729,17 @@
       let serviceFee = 1500;
       const feeMode = worker.feeMode || 'NORMAL';
 
-      if (feeMode === 'FIXED_1500') {
-        serviceFee = 1500;
-      } else if (feeMode === 'CUSTOM_MONTHS') {
-        const prior = Number(worker.priorMonths || 0);
-        const totalMonths = prior + contractMonth;
-        if (totalMonths <= 12) serviceFee = 1800;
-        else if (totalMonths <= 24) serviceFee = 1700;
-        else serviceFee = 1500;
-      } else {
-        if (contractMonth <= 12) serviceFee = 1800;
-        else if (contractMonth <= 24) serviceFee = 1700;
-        else serviceFee = 1500;
-      }
+ if (feeMode === 'FIXED_1500') {
+  serviceFee = 1500;
+} else {
+  // 自動加上承接前的年資月數
+  const prior = Number(worker.priorMonths || 0);
+  const totalMonths = prior + contractMonth;
+  
+  if (totalMonths <= 12) serviceFee = 1800;
+  else if (totalMonths <= 24) serviceFee = 1700;
+  else serviceFee = 1500;
+}
 
       let medicalFee = 0;
       let medicalNote = "";
