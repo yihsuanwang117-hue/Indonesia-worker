@@ -750,10 +750,11 @@
           medicalFee += firstMed;
           medicalNote = `入國健檢 $${firstMed}`;
         }
-      } else if (contractMonth === 6 || contractMonth === 18 || contractMonth === 30 || contractMonth === 31) {
-        medicalFee += 2000;
-        medicalNote = `第${contractMonth}個月健檢 $2,000`;
-      }
+     } else if (contractMonth === 6 || contractMonth === 18 || contractMonth === 30) {
+  // 定期體檢 (固定於第 6, 18, 30 個月收取)
+  medicalFee += 2000;
+  medicalNote = `第${contractMonth}個月健檢 $2,000`;
+}
 
       let arcFee = 0;
       if (contractMonth === 1) {
