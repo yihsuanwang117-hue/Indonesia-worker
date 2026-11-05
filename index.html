@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>印尼移工與雇主管理系統 (靠行協同・欠款追蹤旗艦版)</title>
+  <title>印尼移工與雇主管理系統 (全功能完整版)</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
@@ -16,7 +16,7 @@
     <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap justify-between items-center gap-3">
       <div class="flex items-center gap-2">
         <span class="text-xl font-bold tracking-wide">印尼移工管家 (IndoWorker Pro)</span>
-        <span class="text-xs bg-indigo-700 px-2.5 py-0.5 rounded-full text-indigo-100">靠行協同・追帳旗艦版</span>
+        <span class="text-xs bg-indigo-700 px-2.5 py-0.5 rounded-full text-indigo-100">靠行標籤・追帳精算版</span>
       </div>
       <div class="flex flex-wrap items-center gap-2">
         <button onclick="backupJSON()" title="備份現有全部資料" class="bg-indigo-700 hover:bg-indigo-600 text-white text-xs px-2.5 py-1.5 rounded shadow">
@@ -73,7 +73,7 @@
       </div>
     </div>
 
-    <!-- 標籤導航切換 (新增：欠費多期清冊頁籤) -->
+    <!-- 標籤導航切換 -->
     <div class="flex flex-wrap border-b border-slate-200 bg-white rounded-t-xl px-4 pt-3 gap-6 shadow-sm">
       <button id="tabActiveBtn" onclick="switchMainTab('active')" class="pb-3 text-sm font-semibold border-b-2 border-indigo-600 text-indigo-600 flex items-center gap-1.5">
         <span>在籍移工名冊</span>
@@ -96,19 +96,16 @@
     <!-- 區塊 1: 在籍名冊 (Active) -->
     <div id="sectionActive" class="bg-white rounded-b-xl border border-t-0 border-slate-200 shadow-sm overflow-hidden p-4 space-y-4">
       <div class="flex flex-wrap items-center justify-between gap-3">
-        <!-- 搜尋列與靠行公司篩選 -->
+        <!-- 搜尋列、靠行標籤動態篩選、排序選單 -->
         <div class="flex flex-wrap items-center gap-2">
-          <div class="relative w-72">
+          <div class="relative w-64">
             <input type="text" id="searchInput" oninput="renderActiveTable()" placeholder="搜尋編號、姓名、護照號、雇主..." class="w-full pl-8 pr-3 py-1.5 text-xs border border-slate-300 rounded focus:outline-indigo-500">
             <svg class="w-4 h-4 text-slate-400 absolute left-2.5 top-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
           </div>
 
-          <!-- 靠行公司篩選標籤 -->
+          <!-- 動態靠行公司下拉篩選 -->
           <select id="filterAgency" onchange="renderActiveTable()" class="text-xs border border-slate-300 rounded px-2.5 py-1.5 bg-slate-50 text-slate-700 focus:outline-indigo-500 font-medium">
             <option value="ALL">🏢 全部靠行公司</option>
-            <option value="A公司">🏢 A公司</option>
-            <option value="B公司">🏢 B公司</option>
-            <option value="自有/其他">🏢 自有 / 其他</option>
           </select>
 
           <!-- 排序選單 -->
@@ -140,15 +137,15 @@
         </div>
       </div>
 
-      <!-- 表格 -->
+      <!-- 主名冊表格 (寬度經過優化，編號不截斷，欄位不擁擠) -->
       <div class="overflow-x-auto">
         <table class="w-full text-left text-xs border-collapse">
           <thead>
             <tr class="bg-slate-100 text-slate-600 border-b border-slate-200">
               <th class="p-3 min-w-[90px] whitespace-nowrap">編號</th>
-<th class="p-3 min-w-[140px]">移工姓名 / 護照號碼</th>
-<th class="p-3 min-w-[190px]">雇主 / 電話 / 地址</th>
-<th class="p-3 min-w-[130px]">靠行公司 / 類別</th>
+              <th class="p-3 min-w-[140px]">移工姓名 / 護照號碼</th>
+              <th class="p-3 min-w-[190px]">雇主 / 電話 / 地址</th>
+              <th class="p-3 min-w-[130px]">靠行公司 / 類別</th>
               <th class="p-3">起聘/入境日</th>
               <th class="p-3">聘期到期日</th>
               <th class="p-3">護照到期日</th>
@@ -177,7 +174,7 @@
         <table class="w-full text-left text-xs border-collapse">
           <thead>
             <tr class="bg-slate-100 text-slate-600 border-b border-slate-200">
-              <th class="p-3">編號</th>
+              <th class="p-3 min-w-[90px]">編號</th>
               <th class="p-3">移工姓名 / 護照號</th>
               <th class="p-3">靠行公司</th>
               <th class="p-3">所屬雇主 / 電話</th>
@@ -203,7 +200,7 @@
         <table class="w-full text-left text-xs border-collapse">
           <thead>
             <tr class="bg-slate-100 text-slate-600 border-b border-slate-200">
-              <th class="p-3">編號</th>
+              <th class="p-3 min-w-[90px]">編號</th>
               <th class="p-3">移工姓名 / 護照號</th>
               <th class="p-3">靠行公司</th>
               <th class="p-3">原雇主 / 電話</th>
@@ -230,7 +227,7 @@
         <table class="w-full text-left text-xs border-collapse">
           <thead>
             <tr class="bg-slate-100 text-slate-600 border-b border-slate-200">
-              <th class="p-3">編號</th>
+              <th class="p-3 min-w-[90px]">編號</th>
               <th class="p-3">回國移工姓名</th>
               <th class="p-3">靠行公司</th>
               <th class="p-3">雇主姓名 / 電話 / 地址</th>
@@ -491,7 +488,7 @@
     </div>
   </div>
 
-  <!-- 新增/編輯 Modal 彈窗 (包含靠行公司選擇、自訂ARC、日期獨立卡片化) -->
+  <!-- 新增/編輯 Modal 彈窗 (純標籤公司輸入、居留證2020與自訂、日期獨立卡片) -->
   <div id="workerModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
     <div class="bg-white rounded-xl shadow-xl max-w-xl w-full overflow-hidden max-h-[92vh] overflow-y-auto">
       <div class="bg-indigo-900 text-white px-5 py-3 flex justify-between items-center sticky top-0 z-10">
@@ -501,21 +498,14 @@
       <form id="workerForm" onsubmit="saveWorker(event)" class="p-5 space-y-4 text-xs">
         <input type="hidden" id="editId">
 
-        <!-- 靠行公司選擇 -->
-        <div class="bg-indigo-50/70 p-3 rounded-lg border border-indigo-100 grid grid-cols-2 gap-3 items-center">
-          <div>
-            <label class="block font-bold text-indigo-900 mb-1">所屬靠行公司 (對接窗口) *</label>
-            <select id="wAgency" onchange="toggleCustomAgencyInput()" class="w-full border border-indigo-300 rounded px-2.5 py-1.5 bg-white font-medium focus:outline-indigo-500">
-              <option value="A公司">🏢 A公司</option>
-              <option value="B公司">🏢 B公司</option>
-              <option value="自有/其他">🏢 自有 / 其他</option>
-              <option value="CUSTOM">➕ 自訂靠行公司名稱...</option>
-            </select>
+        <!-- 靠行公司標籤輸入 (具備歷史自動提示) -->
+        <div class="bg-indigo-50/70 p-3 rounded-lg border border-indigo-100 space-y-1.5">
+          <label class="block font-bold text-indigo-900">所屬靠行公司標籤 *</label>
+          <div class="flex gap-2">
+            <input type="text" id="wAgency" list="agencyDatalist" required placeholder="請輸入或選擇靠行公司名稱 (例如：萬通、力通、國瑭...)" class="flex-1 border border-indigo-300 rounded px-2.5 py-1.5 bg-white font-medium text-xs focus:outline-indigo-500">
+            <datalist id="agencyDatalist"></datalist>
           </div>
-          <div>
-            <label class="block font-medium text-indigo-800 mb-1">自訂公司名稱 (選填)</label>
-            <input type="text" id="wCustomAgency" placeholder="請輸入靠行公司名稱" class="w-full border border-indigo-300 rounded px-2.5 py-1.5 bg-white focus:outline-indigo-500 disabled:bg-slate-100 disabled:text-slate-400" disabled>
-          </div>
+          <p class="text-[10px] text-indigo-600">※ 可直接輸入公司名稱，系統會自動歸類建立專屬標籤，也可點選輸入框選擇歷史標籤。</p>
         </div>
 
         <!-- 基本資料 -->
@@ -600,7 +590,7 @@
           </div>
         </div>
 
-        <!-- 首月規費與 ARC 自訂 -->
+        <!-- 首月規費與 ARC 自訂 (含 2020 元) -->
         <div class="bg-indigo-50 p-3 rounded-lg border border-indigo-200 space-y-2">
           <span class="font-bold text-indigo-900 block">⭐ 第 1 個月首期規費/健檢加收項目</span>
           <div class="grid grid-cols-2 gap-3">
@@ -670,7 +660,7 @@
   </div>
 
   <script>
-    // ====== 民國年與西元年轉換核心工具 ======
+    // ====== 1. 民國年與西元年轉換核心工具 ======
     function toRocYear(year) {
       return year - 1911;
     }
@@ -787,30 +777,68 @@
       }
     }
 
-   function toggleCustomAgencyInput() {
-  const sel = document.getElementById('wAgency');
-  const input = document.getElementById('wCustomAgency');
-  if (sel.value === 'CUSTOM') {
-    input.disabled = false;
-    input.classList.remove('bg-slate-100', 'text-slate-400');
-    input.classList.add('bg-white');
-    input.focus();
-  } else {
-    input.disabled = true;
-    input.classList.add('bg-slate-100', 'text-slate-400');
-    input.classList.remove('bg-white');
-    input.value = '';
-  }
-}
+    // ====== 2. 靠行公司動態標籤專用輔助函數 ======
+    function getUniqueAgencies() {
+      const set = new Set();
+      workers.forEach(w => {
+        if (w.agency && w.agency.trim() !== '') set.add(w.agency.trim());
+      });
+      return Array.from(set);
+    }
 
-    // ====== 資料庫與全域狀態 ======
+    function updateAgencySuggestions() {
+      const datalist = document.getElementById('agencyDatalist');
+      if (!datalist) return;
+      datalist.innerHTML = '';
+      getUniqueAgencies().forEach(name => {
+        const opt = document.createElement('option');
+        opt.value = name;
+        datalist.appendChild(opt);
+      });
+    }
+
+    function updateFilterAgencyOptions() {
+      const filterSelect = document.getElementById('filterAgency');
+      if (!filterSelect) return;
+      const currentVal = filterSelect.value;
+      filterSelect.innerHTML = '<option value="ALL">🏢 全部靠行公司</option>';
+
+      getUniqueAgencies().forEach(name => {
+        const opt = document.createElement('option');
+        opt.value = name;
+        opt.innerText = `🏢 ${name}`;
+        if (name === currentVal) opt.selected = true;
+        filterSelect.appendChild(opt);
+      });
+    }
+
+    function getAgencyBadgeHtml(agencyName) {
+      if (!agencyName || agencyName === '未指定公司') {
+        return `<span class="bg-slate-100 text-slate-600 border border-slate-200 px-2 py-0.5 rounded-md text-[10px] font-medium inline-block">🏢 未指定</span>`;
+      }
+      const colorThemes = [
+        { bg: 'bg-purple-50', text: 'text-purple-700', border: 'border-purple-200' },
+        { bg: 'bg-cyan-50', text: 'text-cyan-700', border: 'border-cyan-200' },
+        { bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200' },
+        { bg: 'bg-amber-50', text: 'text-amber-800', border: 'border-amber-200' },
+        { bg: 'bg-rose-50', text: 'text-rose-700', border: 'border-rose-200' },
+        { bg: 'bg-sky-50', text: 'text-sky-700', border: 'border-sky-200' }
+      ];
+      let hash = 0;
+      for (let i = 0; i < agencyName.length; i++) {
+        hash = agencyName.charCodeAt(i) + ((hash << 5) - hash);
+      }
+      const theme = colorThemes[Math.abs(hash) % colorThemes.length];
+      return `<span class="${theme.bg} ${theme.text} ${theme.border} border px-2 py-0.5 rounded-md text-[10px] font-bold inline-block">🏢 ${agencyName}</span>`;
+    }
+
+    // ====== 3. 資料庫與全域狀態 ======
     let workers = JSON.parse(localStorage.getItem('indo_workers_db')) || [];
     let billingHistory = JSON.parse(localStorage.getItem('indo_billing_db')) || {};
     
-    // 初始化確保靠行公司等新欄位存在
     workers.forEach(w => {
       if (!w.status) w.status = 'ACTIVE';
-      if (!w.agency) w.agency = 'A公司';
+      if (!w.agency) w.agency = '未指定公司';
     });
 
     const currentYear = new Date().getFullYear();
@@ -867,7 +895,6 @@
       return Math.round((target - now) / (1000 * 60 * 60 * 24));
     }
 
-    // 做滿整整一個月才收取當期服務費
     function getContractMonthIndex(worker, year, month) {
       const effectiveDateStr = worker.type === '承接' && worker.transferDate ? worker.transferDate : worker.arrivalDate;
       if (!effectiveDateStr) return -1;
@@ -884,7 +911,6 @@
       return (targetDate.getFullYear() - firstBillMonthDate.getFullYear()) * 12 + (targetDate.getMonth() - firstBillMonthDate.getMonth()) + 1;
     }
 
-    // 精算單月份明細與金額
     function calculateDetailedFee(worker, year, month) {
       const contractMonth = getContractMonthIndex(worker, year, month);
       if (contractMonth <= 0) {
@@ -949,14 +975,13 @@
       };
     }
 
-    // 計算某一外勞截至目前所有未收期的清冊
     function getWorkerOverdueInfo(worker) {
       const effectiveDateStr = worker.type === '承接' && worker.transferDate ? worker.transferDate : worker.arrivalDate;
       if (!effectiveDateStr) return { count: 0, totalAmount: 0, unpaidMonths: [] };
 
       const now = new Date();
       const start = new Date(effectiveDateStr);
-      let cur = new Date(start.getFullYear(), start.getMonth() + 1, 1); // 首期收費月
+      let cur = new Date(start.getFullYear(), start.getMonth() + 1, 1);
       const currentMonthCeil = new Date(now.getFullYear(), now.getMonth(), 1);
 
       let unpaidMonths = [];
@@ -992,7 +1017,6 @@
       };
     }
 
-    // ====== 頁籤切換 ======
     function switchMainTab(tab) {
       currentMainTab = tab;
       document.getElementById('sectionActive').classList.toggle('hidden', tab !== 'active');
@@ -1011,7 +1035,7 @@
       if (tab === 'returned') renderReturnedTable();
     }
 
-    // ====== 1. 在籍名冊渲染 (含靠行標籤、排序、黃色新客戶點) ======
+    // ====== 4. 在籍名冊渲染 ======
     function renderActiveTable() {
       const tbody = document.getElementById('workerTableBody');
       const keyword = document.getElementById('searchInput').value.trim().toLowerCase();
@@ -1041,9 +1065,8 @@
         }
       });
 
-      // 篩選
       let activeList = workers.filter(w => (!w.status || w.status === 'ACTIVE')).filter(w => {
-        const agencyMatch = filterAgency === 'ALL' || w.agency === filterAgency || (filterAgency === '自有/其他' && w.agency !== 'A公司' && w.agency !== 'B公司');
+        const agencyMatch = filterAgency === 'ALL' || w.agency === filterAgency;
         const code = (w.code || '').toLowerCase();
         const name = (w.name || '').toLowerCase();
         const employer = (w.employer || '').toLowerCase();
@@ -1056,7 +1079,6 @@
         return agencyMatch && kwMatch;
       });
 
-      // 排序
       activeList.sort((a, b) => {
         if (sortField === 'code_asc') return (a.code || '').localeCompare(b.code || '');
         if (sortField === 'arrival_desc') return (b.arrivalDate || '').localeCompare(a.arrivalDate || '');
@@ -1078,7 +1100,6 @@
         if (!isMissingPassport && passDays <= 180) passportAlertCount++;
         if (contDays <= 90) contractAlertCount++;
 
-        // 護照顯示
         let passBadge = '';
         if (isMissingPassport) {
           passBadge = `<div class="flex items-center gap-1">
@@ -1098,7 +1119,6 @@
           ${toRocDateString(w.contractExpiry)}
         </span>`;
 
-        // 12 個月份圓點
         let dotsHtml = `<div class="flex items-center justify-center gap-1.5">`;
         for (let m = 1; m <= 12; m++) {
           const mStr = String(m).padStart(2, '0');
@@ -1117,7 +1137,6 @@
             colorClass = "bg-emerald-500 border-emerald-600 text-white cursor-pointer hover:scale-110 shadow-sm";
             title = `${rocLabel} (第${feeInfo.contractMonth}個月) [已收款]\n明細：${feeInfo.detailText}\n(點擊可改為未收)`;
           } else if (feeInfo.isExtraCustomerMonth) {
-            // 新客戶加收月：未繳時顯示亮黃色
             colorClass = "bg-amber-400 border-amber-500 text-amber-950 font-bold cursor-pointer hover:scale-110 shadow-md ring-2 ring-amber-300";
             title = `${rocLabel} (第${feeInfo.contractMonth}個月) [★新客戶加收月★]\n明細：${feeInfo.detailText}\n(點擊直接標記已收)`;
           } else {
@@ -1142,26 +1161,17 @@
           </button>
         </div>`;
 
-        // 靠行公司標籤樣式
-        let agencyBadge = '';
-        if (w.agency === 'A公司') {
-          agencyBadge = `<span class="bg-purple-100 text-purple-800 border border-purple-200 px-1.5 py-0.5 rounded text-[10px] font-bold">🏢 A公司</span>`;
-        } else if (w.agency === 'B公司') {
-          agencyBadge = `<span class="bg-cyan-100 text-cyan-800 border border-cyan-200 px-1.5 py-0.5 rounded text-[10px] font-bold">🏢 B公司</span>`;
-        } else {
-          agencyBadge = `<span class="bg-slate-100 text-slate-700 border border-slate-200 px-1.5 py-0.5 rounded text-[10px] font-medium">🏢 ${w.agency || '自有'}</span>`;
-        }
-
+        const agencyBadge = getAgencyBadgeHtml(w.agency);
         let feeBadge = w.feeMode === 'FIXED_1500' ? `<span class="bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded text-[10px] font-medium border border-emerald-200">固定$1500</span>` : (w.feeMode === 'CUSTOM_MONTHS' ? `<span class="bg-amber-50 text-amber-700 px-1.5 py-0.5 rounded text-[10px] font-medium border border-amber-200">累計年資</span>` : `<span class="bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded text-[10px]">標準1800起</span>`);
         const effectiveDateStr = w.type === '承接' && w.transferDate ? w.transferDate : w.arrivalDate;
-
         const overdueInfo = getWorkerOverdueInfo(w);
 
         const tr = document.createElement('tr');
         tr.className = "hover:bg-slate-50";
         tr.innerHTML = `
           <td class="p-3">
-<span class="bg-indigo-50 text-indigo-700 font-mono font-bold px-2 py-0.5 rounded border border-indigo-200 whitespace-nowrap inline-block">${w.code || '-'}</span>          </td>
+            <span class="bg-indigo-50 text-indigo-700 font-mono font-bold px-2 py-0.5 rounded border border-indigo-200 whitespace-nowrap inline-block">${w.code || '-'}</span>
+          </td>
           <td class="p-3">
             <div class="flex items-center gap-1.5">
               <span class="font-bold text-slate-800">${w.name}</span>
@@ -1175,7 +1185,7 @@
             <div class="text-[11px]">${!isMissingPhone ? `<span class="text-slate-500">${w.phone}</span>` : '<span class="text-amber-700 font-bold bg-amber-50 border border-amber-200 px-1 rounded">⚠️ 缺電話</span>'}</div>
             <div class="text-slate-400 text-[10px] truncate max-w-[200px]" title="${w.address || ''}">📍 ${w.address || '未填寫地址'}</div>
           </td>
-<td class="p-3 space-y-1.5 align-top">
+          <td class="p-3 space-y-1.5 align-top">
             <div>${agencyBadge}</div>
             <div class="flex flex-wrap items-center gap-1">
               ${w.type === '承接' ? `<span class="bg-sky-100 text-sky-700 px-1.5 py-0.5 rounded-full font-medium text-[10px]">承接</span>` : `<span class="bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded-full text-[10px]">引進</span>`}
@@ -1210,7 +1220,7 @@
       document.getElementById('badgeReturnedCount').innerText = returnedCount;
     }
 
-    // ====== 2. 欠費多期清冊專區渲染 ======
+    // ====== 5. 欠費多期清冊專區渲染 ======
     function renderOverdueTable() {
       const tbody = document.getElementById('overdueTableBody');
       tbody.innerHTML = '';
@@ -1225,7 +1235,6 @@
         }
       });
 
-      // 欠款最多優先排序
       overdueWorkers.sort((a, b) => b.info.totalAmount - a.info.totalAmount);
 
       if (overdueWorkers.length === 0) {
@@ -1246,12 +1255,12 @@
         const tr = document.createElement('tr');
         tr.className = "hover:bg-rose-50/30";
         tr.innerHTML = `
-          <td class="p-3 font-mono font-bold text-indigo-700">${w.code}</td>
+          <td class="p-3 font-mono font-bold text-indigo-700 whitespace-nowrap">${w.code}</td>
           <td class="p-3">
             <div class="font-bold text-slate-800">${w.name}</div>
             <div class="text-[10px] text-slate-500 font-mono">🪪 ${w.passportNo || '未填護照號'}</div>
           </td>
-          <td class="p-3 font-semibold text-purple-800">${w.agency || 'A公司'}</td>
+          <td class="p-3">${getAgencyBadgeHtml(w.agency)}</td>
           <td class="p-3">
             <div class="font-medium text-slate-800">${w.employer}</div>
             <div class="text-slate-500 text-[11px]">${w.phone || '無電話'}</div>
@@ -1266,7 +1275,7 @@
             <div class="flex flex-wrap gap-1 max-w-md">${monthsBadges}</div>
           </td>
           <td class="p-3 text-center">
-            <button onclick="settleAllOverdue('${w.id}')" class="bg-emerald-600 hover:bg-emerald-700 text-white font-medium px-3 py-1.5 rounded shadow-sm text-xs">
+            <button onclick="settleAllOverdue('${w.id}')" class="bg-emerald-600 hover:bg-emerald-700 text-white font-medium px-3 py-1.5 rounded shadow-sm text-xs whitespace-nowrap">
               ✓ 一鍵全收齊
             </button>
           </td>
@@ -1301,7 +1310,7 @@
       }
     }
 
-    // ====== 3. 人才池渲染 ======
+    // ====== 6. 人才池與期滿回國渲染 ======
     function renderPoolTable() {
       const tbody = document.getElementById('poolTableBody');
       tbody.innerHTML = '';
@@ -1317,12 +1326,12 @@
         const tr = document.createElement('tr');
         tr.className = "hover:bg-amber-50/50";
         tr.innerHTML = `
-          <td class="p-3 font-mono font-bold text-indigo-700">${w.code}</td>
+          <td class="p-3 font-mono font-bold text-indigo-700 whitespace-nowrap">${w.code}</td>
           <td class="p-3">
             <div class="font-bold text-slate-800">${w.name}</div>
             <div class="text-[10px] text-slate-500">🪪 ${w.passportNo || '未填護照號'}</div>
           </td>
-          <td class="p-3 font-semibold text-purple-800">${w.agency || 'A公司'}</td>
+          <td class="p-3">${getAgencyBadgeHtml(w.agency)}</td>
           <td class="p-3">
             <div class="font-medium text-slate-700">${w.employer}</div>
             <div class="text-[11px]">${w.phone ? `<span class="text-slate-400">${w.phone}</span>` : '<span class="text-amber-700 font-bold bg-amber-50 px-1 rounded">⚠️ 缺電話</span>'}</div>
@@ -1347,7 +1356,6 @@
       });
     }
 
-    // ====== 4. 期滿回國渲染 ======
     function renderReturnedTable() {
       const tbody = document.getElementById('returnedTableBody');
       tbody.innerHTML = '';
@@ -1362,12 +1370,12 @@
         const tr = document.createElement('tr');
         tr.className = "hover:bg-slate-50";
         tr.innerHTML = `
-          <td class="p-3 font-mono text-slate-400">${w.code}</td>
+          <td class="p-3 font-mono text-slate-400 whitespace-nowrap">${w.code}</td>
           <td class="p-3">
             <div class="font-bold text-slate-600">${w.name}</div>
             <div class="text-[10px] text-slate-400">🪪 ${w.passportNo || ''}</div>
           </td>
-          <td class="p-3 font-semibold text-purple-800">${w.agency || 'A公司'}</td>
+          <td class="p-3">${getAgencyBadgeHtml(w.agency)}</td>
           <td class="p-3">
             <div class="font-medium text-slate-800">${w.employer}</div>
             <div class="text-slate-400 text-[11px]">${w.phone || '無電話'} ｜ 📍 ${w.address || '-'}</div>
@@ -1386,7 +1394,7 @@
       });
     }
 
-    // ====== 轉出、媒合、結案 ======
+    // ====== 7. 轉出、承接、回國互動邏輯 ======
     function openTransferOutModal(workerId) {
       const w = workers.find(item => item.id === workerId);
       if (!w) return;
@@ -1431,7 +1439,7 @@
       const w = workers.find(item => item.id === workerId);
       if (!w) return;
       document.getElementById('matchWorkerId').value = w.id;
-      document.getElementById('matchWorkerNameTitle').innerText = `承接移工：${w.name} (原雇主: ${w.employer} ｜ 靠行: ${w.agency || 'A公司'})`;
+      document.getElementById('matchWorkerNameTitle').innerText = `承接移工：${w.name} (原雇主: ${w.employer} ｜ 靠行: ${w.agency || '未指定'})`;
       
       const start = new Date(w.arrivalDate);
       const now = new Date();
@@ -1510,14 +1518,14 @@
       if (!oldW) return;
 
       openModal(false);
-      document.getElementById('wAgency').value = oldW.agency || 'A公司';
+      document.getElementById('wAgency').value = oldW.agency || '';
       document.getElementById('wEmployer').value = oldW.employer;
       document.getElementById('wPhone').value = oldW.phone || '';
       document.getElementById('wAddress').value = oldW.address || '';
       document.getElementById('wNotes').value = `遞補原離境移工 ${oldW.name} (${oldW.code})`;
       
       switchMainTab('active');
-      alert(`已自動為雇主「${oldW.employer}」開啟新增視窗，靠行公司與聯絡地址已自動帶入！`);
+      alert(`已自動為雇主「${oldW.employer}」開啟新增視窗，靠行公司標籤與聯絡地址已自動帶入！`);
     }
 
     function toggleSingleDot(ym, workerId) {
@@ -1530,7 +1538,7 @@
       renderActiveTable();
     }
 
-    // ====== 護照延期彈窗 ======
+    // ====== 8. 護照換發與續聘 ======
     function openRenewPassportModal(workerId) {
       const w = workers.find(item => item.id === workerId);
       if (!w) return;
@@ -1568,12 +1576,11 @@
       }
     }
 
-    // ====== 期滿續聘彈窗 ======
     function openRenewContractModal(workerId) {
       const w = workers.find(item => item.id === workerId);
       if (!w) return;
       document.getElementById('renewContractWorkerId').value = w.id;
-      document.getElementById('renewContractTitle').innerText = `${w.name} (${w.code}) ｜ 雇主: ${w.employer} (${w.agency || 'A公司'})`;
+      document.getElementById('renewContractTitle').innerText = `${w.name} (${w.code}) ｜ 雇主: ${w.employer} (${w.agency || '未指定'})`;
       document.getElementById('renewContractOldExpiry').innerText = `民國 ${toRocDateString(w.contractExpiry)}`;
 
       let newStartStr = '';
@@ -1621,14 +1628,14 @@
       }
     }
 
-    // ====== 多月批次收款 ======
+    // ====== 9. 多月連續收款 ======
     function openMultiMonthModal(workerId) {
       const w = workers.find(item => item.id === workerId);
       if (!w) return;
       activeWorkerForMulti = w;
 
       document.getElementById('multiWorkerNameTitle').innerText = `批次收款：${w.name} (${w.code || ''})`;
-      document.getElementById('multiWorkerEmployerTitle').innerText = `雇主：${w.employer} ｜ 靠行：${w.agency || 'A公司'} ｜ 年度：民國 ${toRocYear(displayYear)} 年`;
+      document.getElementById('multiWorkerEmployerTitle').innerText = `雇主：${w.employer} ｜ 靠行：${w.agency || '未指定'} ｜ 年度：民國 ${toRocYear(displayYear)} 年`;
 
       const container = document.getElementById('monthsCheckboxContainer');
       container.innerHTML = '';
@@ -1717,16 +1724,16 @@
       }
     }
 
-    // ====== 新增與編輯案件視窗 ======
+    // ====== 10. 表單開啟與存檔 ======
     function openModal(isEdit = false) {
       document.getElementById('workerModal').classList.remove('hidden');
       if (!isEdit) {
         document.getElementById('workerForm').reset();
         document.getElementById('editId').value = '';
         document.getElementById('wCode').value = `ID-${String(workers.length + 1).padStart(2, '0')}`;
-        document.getElementById('wAgency').value = "A公司";
-        document.getElementById('wCustomAgency').value = "";
-        document.getElementById('wCustomAgency').disabled = true;
+        document.getElementById('wAgency').value = "";
+        updateAgencySuggestions();
+
         document.getElementById('wFeeMode').value = "NORMAL";
         document.getElementById('wPriorMonths').value = "0";
         document.getElementById('wExtraCustomerFee').checked = false;
@@ -1736,16 +1743,16 @@
         document.getElementById('wCustomArcAmount').classList.add('hidden');
         document.getElementById('modalTitle').innerText = "新增移工案件";
         
-        const todayStr = new Date().toISOString().slice(0,10);
+        const todayStr = new Date().toISOString().slice(0, 10);
         setupRocDatePicker('rocGroup_wArrivalDate', todayStr, false, false);
         setupRocDatePicker('rocGroup_wTransferDate', todayStr, false, false);
         
         const d3 = new Date();
         d3.setFullYear(d3.getFullYear() + 3);
-        setupRocDatePicker('rocGroup_wContractExpiry', d3.toISOString().slice(0,10), false, false);
+        setupRocDatePicker('rocGroup_wContractExpiry', d3.toISOString().slice(0, 10), false, false);
         setupRocDatePicker('rocGroup_wPassportExpiry', '', true, true);
 
-        // 自動連動：入境日/承接日 +3 年
+        // 自動推算 +3 年
         const arrivalContainer = document.getElementById('rocGroup_wArrivalDate');
         const transferContainer = document.getElementById('rocGroup_wTransferDate');
         const expContainer = document.getElementById('rocGroup_wContractExpiry');
@@ -1790,14 +1797,10 @@
       const id = document.getElementById('editId').value || String(Date.now());
       const existing = workers.find(w => w.id === id);
 
-     // 靠行公司判定：自訂優先，若自訂欄位有文字就以此為準
-      let agencyVal = document.getElementById('wAgency').value;
-      const customAgencyName = document.getElementById('wCustomAgency').value.trim();
-      if (agencyVal === 'CUSTOM' || customAgencyName !== '') {
-        agencyVal = customAgencyName || '自訂公司';
-      }
+      // 直接儲存公司文字標籤
+      const agencyVal = document.getElementById('wAgency').value.trim() || '未指定公司';
 
-      // ARC 費用判定
+      // 居留證費用判斷
       let arcVal = 3030;
       if (document.getElementById('wFirstMonthArc').value === 'CUSTOM') {
         arcVal = Number(document.getElementById('wCustomArcAmount').value || 0);
@@ -1837,6 +1840,8 @@
       }
 
       saveToStorage();
+      updateAgencySuggestions();
+      updateFilterAgencyOptions();
       closeModal();
       renderActiveTable();
     }
@@ -1853,16 +1858,9 @@
       document.getElementById('wAddress').value = w.address || '';
       document.getElementById('wType').value = w.type;
 
-     // 靠行公司還原
-      if (w.agency === 'A公司' || w.agency === 'B公司') {
-        document.getElementById('wAgency').value = w.agency;
-        document.getElementById('wCustomAgency').value = '';
-        document.getElementById('wCustomAgency').disabled = true;
-      } else {
-        document.getElementById('wAgency').value = 'CUSTOM';
-        document.getElementById('wCustomAgency').value = w.agency || '';
-        document.getElementById('wCustomAgency').disabled = false;
-      }
+      // 帶入公司標籤
+      document.getElementById('wAgency').value = w.agency || '';
+      updateAgencySuggestions();
       
       setupRocDatePicker('rocGroup_wArrivalDate', w.arrivalDate || '', false, false);
       setupRocDatePicker('rocGroup_wTransferDate', w.transferDate || '', false, false);
@@ -1874,7 +1872,7 @@
       document.getElementById('wExtraCustomerFee').checked = !!w.hasExtraCustomerFee;
       document.getElementById('wFirstMonthMedical').value = w.firstMonthMedical !== undefined ? w.firstMonthMedical : 0;
       
-      // ARC 費用還原
+      // 居留證還原
       const arcVal = w.firstMonthArc !== undefined ? String(w.firstMonthArc) : "3030";
       const standardArcOptions = ["3030", "2020", "1010", "3000", "2000", "1000", "0"];
       if (standardArcOptions.includes(arcVal)) {
@@ -1899,24 +1897,28 @@
       if (confirm("確定要刪除此筆移工記錄嗎？")) {
         workers = workers.filter(w => w.id !== id);
         saveToStorage();
+        updateAgencySuggestions();
+        updateFilterAgencyOptions();
         renderActiveTable();
+        renderOverdueTable();
         renderPoolTable();
         renderReturnedTable();
       }
     }
 
+    // ====== 11. 匯出 CSV 與 備份還原 ======
     function exportCSV() {
-      let csv = "\uFEFF靠行公司,狀態,自訂編號,移工姓名,護照號碼,所屬雇主,電話,雇主地址,來源類型,收費模式,入境/起聘日(民國),承接日(民國),聘僱到期日(民國),護照到期日(西元),缺護照影本,缺雇主電話,收費方式,備註\n";
+      let csv = "\uFEFF靠行公司標籤,狀態,自訂編號,移工姓名,護照號碼,所屬雇主,電話,雇主地址,來源類型,收費模式,入境/起聘日(民國),承接日(民國),聘僱到期日(民國),護照到期日(西元),缺護照影本,缺雇主電話,收費方式,備註\n";
       workers.forEach(w => {
         const isMissingPassport = (!w.passportExpiry || w.passportExpiry.trim() === '');
         const isMissingPhone = (!w.phone || w.phone.trim() === '');
-        csv += `"${w.agency || 'A公司'}","${w.status || 'ACTIVE'}","${w.code || ''}","${w.name}","${w.passportNo || ''}","${w.employer}","${w.phone || ''}","${w.address || ''}","${w.type}","${w.feeMode || 'NORMAL'}","${toRocDateString(w.arrivalDate)}","${toRocDateString(w.transferDate)}","${toRocDateString(w.contractExpiry)}","${isMissingPassport ? '未知(缺影本)' : w.passportExpiry.replace(/-/g, '/')}","${isMissingPassport ? '是' : '否'}","${isMissingPhone ? '是' : '否'}","${w.paymentMethod}","${w.notes || ''}"\n`;
+        csv += `"${w.agency || '未指定'}","${w.status || 'ACTIVE'}","${w.code || ''}","${w.name}","${w.passportNo || ''}","${w.employer}","${w.phone || ''}","${w.address || ''}","${w.type}","${w.feeMode || 'NORMAL'}","${toRocDateString(w.arrivalDate)}","${toRocDateString(w.transferDate)}","${toRocDateString(w.contractExpiry)}","${isMissingPassport ? '未知(缺影本)' : w.passportExpiry.replace(/-/g, '/')}","${isMissingPassport ? '是' : '否'}","${isMissingPhone ? '是' : '否'}","${w.paymentMethod}","${w.notes || ''}"\n`;
       });
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.setAttribute("href", url);
-      link.setAttribute("download", `印尼移工名冊(含靠行公司)_民國${toRocYear(new Date().getFullYear())}年.csv`);
+      link.setAttribute("download", `印尼移工名冊_民國${toRocYear(new Date().getFullYear())}年.csv`);
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -1950,6 +1952,8 @@
               workers = parsed.workers;
               billingHistory = parsed.billingHistory;
               saveToStorage();
+              updateAgencySuggestions();
+              updateFilterAgencyOptions();
               renderActiveTable();
               alert("資料還原成功！");
             }
@@ -1963,7 +1967,10 @@
       reader.readAsText(file);
     }
 
+    // 初始化啟動
     initYearSelector();
+    updateAgencySuggestions();
+    updateFilterAgencyOptions();
     renderActiveTable();
   </script>
 </body>
