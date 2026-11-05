@@ -585,7 +585,7 @@
       if (allowUnknown) {
         yOptions += `<option value="UNKNOWN" ${isUnknown ? 'selected' : ''} class="text-rose-600 font-bold">✕ 未知 (缺護照影本)</option>`;
       }
-      for (let y = 110; y <= 126; y++) {
+      for (let y = 100; y <= 126; y++) {
         yOptions += `<option value="${y}" ${(!isUnknown && y === rocY) ? 'selected' : ''}>民國 ${y} 年</option>`;
       }
 
