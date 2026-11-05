@@ -1400,28 +1400,52 @@ function openModal(isEdit = false) {
     // 護照到期日：改用西元年 (最後一個參數設為 true)
     setupRocDatePicker('rocGroup_wPassportExpiry', '', true, true);
 
-    // ★★★ 自動連動核心邏輯 ★★★
-    // 監聽入境日的 年、月、日 下拉選單，只要變動，聘僱到期日自動同步變成「年 + 3，月日相同」
+ // ★★★ 智慧自動連動：引進案依入境日+3年；承接案依承接日+3年 ★★★
     const arrivalContainer = document.getElementById('rocGroup_wArrivalDate');
-    const syncExpiry = () => {
-      // 只有在「國外引進」時自動計算 3 年；國內承接案通常不足 3 年，交由人工自訂
-      if (document.getElementById('wType').value === '引進') {
-        const arrY = Number(arrivalContainer.querySelector('.roc-year').value);
-        const arrM = arrivalContainer.querySelector('.roc-month').value;
-        const arrD = arrivalContainer.querySelector('.roc-day').value;
-        
-        const expContainer = document.getElementById('rocGroup_wContractExpiry');
-        if (expContainer) {
-          expContainer.querySelector('.roc-year').value = arrY + 3;
-          expContainer.querySelector('.roc-month').value = arrM;
-          expContainer.querySelector('.roc-day').value = arrD;
-        }
-      }
+    const transferContainer = document.getElementById('rocGroup_wTransferDate');
+    const expContainer = document.getElementById('rocGroup_wContractExpiry');
+
+    // 依指定來源容器 (入境日 或 承接日) 自動把聘約到期日設為「年+3，月日相同」
+    const applyAdd3Years = (sourceContainer) => {
+      if (!sourceContainer || !expContainer) return;
+      const srcY = Number(sourceContainer.querySelector('.roc-year').value);
+      const srcM = sourceContainer.querySelector('.roc-month').value;
+      const srcD = sourceContainer.querySelector('.roc-day').value;
+      
+      expContainer.querySelector('.roc-year').value = srcY + 3;
+      expContainer.querySelector('.roc-month').value = srcM;
+      expContainer.querySelector('.roc-day').value = srcD;
     };
+
+    // 1. 當「入境日」的年/月/日變動時：若為引進案，自動推算+3年
     arrivalContainer.querySelectorAll('select').forEach(sel => {
-      sel.onchange = syncExpiry;
+      sel.onchange = () => {
+        if (document.getElementById('wType').value === '引進') {
+          applyAdd3Years(arrivalContainer);
+        }
+      };
     });
 
+    // 2. 當「承接日」的年/月/日變動時：只要是承接案，立即以承接日自動推算+3年
+    transferContainer.querySelectorAll('select').forEach(sel => {
+      sel.onchange = () => {
+        if (document.getElementById('wType').value === '承接') {
+          applyAdd3Years(transferContainer);
+        }
+      };
+    });
+
+    // 3. 當切換「引進 / 承接」類型時，自動切換基準日重新計算
+    const originalToggleTransferField = window.toggleTransferField;
+    window.toggleTransferField = function() {
+      if (typeof originalToggleTransferField === 'function') originalToggleTransferField();
+      const currentType = document.getElementById('wType').value;
+      if (currentType === '承接') {
+        applyAdd3Years(transferContainer);
+      } else {
+        applyAdd3Years(arrivalContainer);
+      }
+    };
     toggleTransferField();
     toggleSeniorMonthsField();
   }
