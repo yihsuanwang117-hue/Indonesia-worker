@@ -145,10 +145,10 @@
         <table class="w-full text-left text-xs border-collapse">
           <thead>
             <tr class="bg-slate-100 text-slate-600 border-b border-slate-200">
-              <th class="p-3 w-16">編號</th>
-              <th class="p-3 min-w-[150px]">移工姓名 / 護照號碼</th>
-              <th class="p-3 min-w-[190px]">雇主 / 電話 / 地址</th>
-              <th class="p-3">靠行公司 / 類別</th>
+              <th class="p-3 min-w-[90px] whitespace-nowrap">編號</th>
+<th class="p-3 min-w-[140px]">移工姓名 / 護照號碼</th>
+<th class="p-3 min-w-[190px]">雇主 / 電話 / 地址</th>
+<th class="p-3 min-w-[130px]">靠行公司 / 類別</th>
               <th class="p-3">起聘/入境日</th>
               <th class="p-3">聘期到期日</th>
               <th class="p-3">護照到期日</th>
@@ -787,17 +787,21 @@
       }
     }
 
-    function toggleCustomAgencyInput() {
-      const sel = document.getElementById('wAgency');
-      const input = document.getElementById('wCustomAgency');
-      if (sel.value === 'CUSTOM') {
-        input.disabled = false;
-        input.focus();
-      } else {
-        input.disabled = true;
-        input.value = '';
-      }
-    }
+   function toggleCustomAgencyInput() {
+  const sel = document.getElementById('wAgency');
+  const input = document.getElementById('wCustomAgency');
+  if (sel.value === 'CUSTOM') {
+    input.disabled = false;
+    input.classList.remove('bg-slate-100', 'text-slate-400');
+    input.classList.add('bg-white');
+    input.focus();
+  } else {
+    input.disabled = true;
+    input.classList.add('bg-slate-100', 'text-slate-400');
+    input.classList.remove('bg-white');
+    input.value = '';
+  }
+}
 
     // ====== 資料庫與全域狀態 ======
     let workers = JSON.parse(localStorage.getItem('indo_workers_db')) || [];
@@ -1157,8 +1161,7 @@
         tr.className = "hover:bg-slate-50";
         tr.innerHTML = `
           <td class="p-3">
-            <span class="bg-indigo-50 text-indigo-700 font-mono font-bold px-1.5 py-0.5 rounded border border-indigo-200">${w.code || '-'}</span>
-          </td>
+<span class="bg-indigo-50 text-indigo-700 font-mono font-bold px-2 py-0.5 rounded border border-indigo-200 whitespace-nowrap inline-block">${w.code || '-'}</span>          </td>
           <td class="p-3">
             <div class="flex items-center gap-1.5">
               <span class="font-bold text-slate-800">${w.name}</span>
@@ -1172,9 +1175,9 @@
             <div class="text-[11px]">${!isMissingPhone ? `<span class="text-slate-500">${w.phone}</span>` : '<span class="text-amber-700 font-bold bg-amber-50 border border-amber-200 px-1 rounded">⚠️ 缺電話</span>'}</div>
             <div class="text-slate-400 text-[10px] truncate max-w-[200px]" title="${w.address || ''}">📍 ${w.address || '未填寫地址'}</div>
           </td>
-          <td class="p-3 space-y-1">
+<td class="p-3 space-y-1.5 align-top">
             <div>${agencyBadge}</div>
-            <div class="flex items-center gap-1">
+            <div class="flex flex-wrap items-center gap-1">
               ${w.type === '承接' ? `<span class="bg-sky-100 text-sky-700 px-1.5 py-0.5 rounded-full font-medium text-[10px]">承接</span>` : `<span class="bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded-full text-[10px]">引進</span>`}
               ${feeBadge}
             </div>
@@ -1787,10 +1790,11 @@
       const id = document.getElementById('editId').value || String(Date.now());
       const existing = workers.find(w => w.id === id);
 
-      // 靠行公司判定
+     // 靠行公司判定：自訂優先，若自訂欄位有文字就以此為準
       let agencyVal = document.getElementById('wAgency').value;
-      if (agencyVal === 'CUSTOM') {
-        agencyVal = document.getElementById('wCustomAgency').value.trim() || '其他公司';
+      const customAgencyName = document.getElementById('wCustomAgency').value.trim();
+      if (agencyVal === 'CUSTOM' || customAgencyName !== '') {
+        agencyVal = customAgencyName || '自訂公司';
       }
 
       // ARC 費用判定
@@ -1849,9 +1853,8 @@
       document.getElementById('wAddress').value = w.address || '';
       document.getElementById('wType').value = w.type;
 
-      // 靠行公司還原
-      const standardAgencies = ['A公司', 'B公司', '自有/其他'];
-      if (standardAgencies.includes(w.agency)) {
+     // 靠行公司還原
+      if (w.agency === 'A公司' || w.agency === 'B公司') {
         document.getElementById('wAgency').value = w.agency;
         document.getElementById('wCustomAgency').value = '';
         document.getElementById('wCustomAgency').disabled = true;
