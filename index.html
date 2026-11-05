@@ -529,28 +529,33 @@
 
         <div class="bg-indigo-50 p-3 rounded-lg border border-indigo-200 space-y-2">
           <span class="font-bold text-indigo-900 block">⭐ 第 1 個月首期規費/健檢加收項目</span>
-          <div class="grid grid-cols-2 gap-3">
-            <div>
-              <label class="block font-medium text-indigo-800 mb-1">第 1 個月入國健檢費</label>
-              <select id="wFirstMonthMedical" class="w-full border border-indigo-300 rounded px-2 py-1.5 bg-white">
-                <option value="0">無加收 ($0)</option>
-                <option value="2500">加收入國健檢 $2,500</option>
-                <option value="2000">加收 $2,000</option>
-              </select>
-            </div>
-            <div>
-              <label class="block font-medium text-indigo-800 mb-1">第 1 個月居留證(ARC)費用</label>
-              <select id="wFirstMonthArc" class="w-full border border-indigo-300 rounded px-2 py-1.5 bg-white">
-                <option value="3030">3,030 元 (常見3年期+指紋/晶片)</option>
-                <option value="3000">3,000 元</option>
-                <option value="2000">2,000 元 (2年期)</option>
-                <option value="1010">1,010 元 (1年期)</option>
-                <option value="1000">1,000 元</option>
-                <option value="0">無 (雇主自付/已繳 $0)</option>
-              </select>
-            </div>
-          </div>
-        </div>
+         <div class="grid grid-cols-2 gap-3">
+  <div>
+    <label class="block font-medium text-indigo-800 mb-1">第 1 個月入國健檢費</label>
+    <select id="wFirstMonthMedical" class="w-full border border-indigo-300 rounded px-2 py-1.5 bg-white">
+      <option value="0">無加收 ($0)</option>
+      <option value="2500">加收入國健檢 $2,500</option>
+      <option value="2000">加收 $2,000</option>
+    </select>
+  </div>
+  <div>
+    <label class="block font-medium text-indigo-800 mb-1">第 1 個月居留證(ARC)費用</label>
+    <!-- 補上這個 flex 容器，自訂輸入框才會漂亮地並排在選單右側 -->
+    <div class="flex gap-1.5">
+      <select id="wFirstMonthArc" onchange="toggleCustomArcInput()" class="border border-indigo-300 rounded px-2 py-1.5 bg-white flex-1 focus:outline-indigo-500">
+        <option value="3030">3,030 元 (3年期含指紋卡)</option>
+        <option value="2020">2,020 元 (2年期含指紋卡)</option>
+        <option value="1010">1,010 元 (1年期含指紋卡)</option>
+        <option value="3000">3,000 元</option>
+        <option value="2000">2,000 元</option>
+        <option value="1000">1,000 元</option>
+        <option value="0">無 (雇主自付/免收 $0)</option>
+        <option value="CUSTOM">自訂金額...</option>
+      </select>
+      <input type="number" id="wCustomArcAmount" placeholder="金額" class="hidden w-20 border border-indigo-300 rounded px-2 py-1.5 bg-white text-xs focus:outline-indigo-500">
+    </div>
+  </div>
+</div>
 
         <div class="grid grid-cols-2 gap-3">
           <div>
@@ -590,6 +595,17 @@
   </div>
 
   <script>
+    function toggleCustomArcInput() {
+  const sel = document.getElementById('wFirstMonthArc');
+  const customInput = document.getElementById('wCustomArcAmount');
+  if (sel.value === 'CUSTOM') {
+    customInput.classList.remove('hidden');
+    customInput.focus();
+  } else {
+    customInput.classList.add('hidden');
+    customInput.value = '';
+  }
+}
     // ====== 民國年轉換核心 ======
     function toRocYear(year) {
       return year - 1911;
@@ -1418,7 +1434,9 @@ function openModal(isEdit = false) {
     document.getElementById('wCode').value = `ID-${String(workers.length + 1).padStart(2, '0')}`;
     document.getElementById('wFeeMode').value = "NORMAL";
     document.getElementById('wFirstMonthMedical').value = "0";
-    document.getElementById('wFirstMonthArc').value = "3030";
+   document.getElementById('wFirstMonthArc').value = "3030";
+        document.getElementById('wCustomArcAmount').value = '';
+        document.getElementById('wCustomArcAmount').classList.add('hidden');
     // ★ 加上這行：每次點「新增案件」時預設不勾選
     document.getElementById('wExtraCustomerFee').checked = false;
     document.getElementById('modalTitle').innerText = "新增移工案件";
@@ -1512,8 +1530,9 @@ function openModal(isEdit = false) {
         hasExtraCustomerFee: document.getElementById('wExtraCustomerFee').checked,
         priorMonths: Number(document.getElementById('wPriorMonths').value || 0),
         firstMonthMedical: Number(document.getElementById('wFirstMonthMedical').value || 0),
-        firstMonthArc: Number(document.getElementById('wFirstMonthArc').value || 0),
-        contractExpiry: getRocDateValue('rocGroup_wContractExpiry'),
+firstMonthArc: document.getElementById('wFirstMonthArc').value === 'CUSTOM'
+  ? Number(document.getElementById('wCustomArcAmount').value || 0)
+  : Number(document.getElementById('wFirstMonthArc').value || 0),        contractExpiry: getRocDateValue('rocGroup_wContractExpiry'),
         passportExpiry: getRocDateValue('rocGroup_wPassportExpiry'),
         paymentMethod: document.getElementById('wPaymentMethod').value,
         notes: document.getElementById('wNotes').value.trim(),
@@ -1556,8 +1575,20 @@ document.getElementById('wFeeMode').value = w.feeMode || 'NORMAL';
       document.getElementById('wExtraCustomerFee').checked = !!w.hasExtraCustomerFee;
       document.getElementById('wPriorMonths').value = w.priorMonths || 0;
   document.getElementById('wFirstMonthMedical').value = w.firstMonthMedical !== undefined ? w.firstMonthMedical : 0;
-  document.getElementById('wFirstMonthArc').value = w.firstMonthArc !== undefined ? w.firstMonthArc : 3030;
-  document.getElementById('wPaymentMethod').value = w.paymentMethod;
+const arcVal = w.firstMonthArc !== undefined ? String(w.firstMonthArc) : "3030";
+const standardArcOptions = ["3030", "2020", "1010", "3000", "2000", "1000", "0"];
+
+if (standardArcOptions.includes(arcVal)) {
+  // 情況 A：存檔的金額剛好是預設選單中的數值 (如 2020、3030)
+  document.getElementById('wFirstMonthArc').value = arcVal;
+  document.getElementById('wCustomArcAmount').value = '';
+  document.getElementById('wCustomArcAmount').classList.add('hidden');
+} else {
+  // 情況 B：存檔的金額是自訂數字 (如 1500)
+  document.getElementById('wFirstMonthArc').value = 'CUSTOM';
+  document.getElementById('wCustomArcAmount').value = arcVal;
+  document.getElementById('wCustomArcAmount').classList.remove('hidden');
+}  document.getElementById('wPaymentMethod').value = w.paymentMethod;
   document.getElementById('wNotes').value = w.notes || '';
   
   document.getElementById('modalTitle').innerText = "編輯移工資料";
