@@ -916,7 +916,14 @@
       if (contractMonth <= 0) {
         return { total: 0, serviceFee: 0, medicalFee: 0, arcFee: 0, extraCustomerFee: 0, isExtraCustomerMonth: false, label: "尚未起聘/做滿整月", isActive: false };
       }
-
+      // 若超過最新核准的聘約到期日，才判定為無效月 (變灰)
+      if (worker.contractExpiry) {
+        const expDate = new Date(worker.contractExpiry);
+        const currentMonthFirstDay = new Date(year, month - 1, 1);
+        if (currentMonthFirstDay > expDate) {
+          return { total: 0, serviceFee: 0, medicalFee: 0, arcFee: 0, extraCustomerFee: 0, isExtraCustomerMonth: false, label: "已超過聘僱許可效期", isActive: false };
+        }
+      }
       let serviceFee = 1500;
       const feeMode = worker.feeMode || 'NORMAL';
 
@@ -1606,27 +1613,32 @@
       document.getElementById('renewContractModal').classList.add('hidden');
     }
 
-    function confirmRenewContract(e) {
-      e.preventDefault();
-      const id = document.getElementById('renewContractWorkerId').value;
-      const w = workers.find(item => item.id === id);
-      if (w) {
-        const newStartDate = getRocDateValue('rocGroup_renewStartDate');
-        const newEndDate = getRocDateValue('rocGroup_renewEndExpiry');
+   function confirmRenewContract(e) {
+  e.preventDefault();
+  const id = document.getElementById('renewContractWorkerId').value;
+  const w = workers.find(item => item.id === id);
+  if (w) {
+    const newStartDate = getRocDateValue('rocGroup_renewStartDate');
+    const newEndDate = getRocDateValue('rocGroup_renewEndExpiry');
 
-        w.arrivalDate = newStartDate;
-        w.contractExpiry = newEndDate;
-        w.transferDate = '';
-        w.feeMode = 'FIXED_1500';
-        w.firstMonthMedical = 0;
-        w.notes = (w.notes ? w.notes + "；" : "") + `於民國 ${toRocDateString(newStartDate)} 與原雇主續聘3年(至 ${toRocDateString(newEndDate)})`;
+    // ★★★ 關鍵修正：絕不覆蓋 arrivalDate，確保原合約 112~115 年的收款圓點不變灰 ★★★
+    // 僅更新新聘僱到期日
+    w.contractExpiry = newEndDate;
+    w.transferDate = ''; // 原雇主續聘非承接
 
-        saveToStorage();
-        closeRenewContractModal();
-        renderActiveTable();
-        alert(`續聘手續完成！${w.name} 聘期已展延至民國 ${toRocDateString(newEndDate)}，每月服務費已固定設為 $1,500。`);
-      }
-    }
+    // 滿 3 年續聘，服務費費率自動切換為固定 $1,500
+    w.feeMode = 'FIXED_1500';
+    w.firstMonthMedical = 0; // 續聘免初檢費
+
+    // 紀錄續聘備註
+    w.notes = (w.notes ? w.notes + "；" : "") + `於民國 ${toRocDateString(newStartDate)} 與原雇主續聘3年(展延至 ${toRocDateString(newEndDate)})`;
+
+    saveToStorage();
+    closeRenewContractModal();
+    renderActiveTable();
+    alert(`續聘手續完成！${w.name} 聘期已順利展延至民國 ${toRocDateString(newEndDate)}，歷史與未來到期月份皆正常收費。`);
+  }
+}
 
     // ====== 9. 多月連續收款 ======
     function openMultiMonthModal(workerId) {
