@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>印尼移工與雇主管理系統 (民國年版)</title>
+  <title>印尼移工與雇主管理系統 (民國年選單版)</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
@@ -16,7 +16,7 @@
     <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap justify-between items-center gap-3">
       <div class="flex items-center gap-2">
         <span class="text-xl font-bold tracking-wide">印尼移工管家 (IndoWorker Pro)</span>
-        <span class="text-xs bg-indigo-700 px-2.5 py-0.5 rounded-full text-indigo-100">民國年專用版</span>
+        <span class="text-xs bg-indigo-700 px-2.5 py-0.5 rounded-full text-indigo-100">全民國年・缺件警示版</span>
       </div>
       <div class="flex flex-wrap items-center gap-2">
         <button onclick="backupJSON()" title="備份現有全部資料" class="bg-indigo-700 hover:bg-indigo-600 text-white text-xs px-2.5 py-1.5 rounded shadow">
@@ -50,10 +50,10 @@
 
       <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
         <div>
-          <p class="text-xs text-amber-600 font-medium">待轉出移工 (人才池 Pool)</p>
-          <h3 id="statTransferPool" class="text-2xl font-bold text-amber-600 mt-1">0 人</h3>
+          <p class="text-xs text-amber-600 font-medium">證件缺件待補</p>
+          <h3 id="statMissingDocs" class="text-2xl font-bold text-amber-600 mt-1">0 人</h3>
         </div>
-        <div class="w-10 h-10 rounded-lg bg-amber-50 flex items-center justify-center text-amber-600 font-bold">池</div>
+        <div class="w-10 h-10 rounded-lg bg-amber-50 flex items-center justify-center text-amber-600 font-bold">缺</div>
       </div>
 
       <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
@@ -121,8 +121,8 @@
           <thead>
             <tr class="bg-slate-100 text-slate-600 border-b border-slate-200">
               <th class="p-3 w-16">編號</th>
-              <th class="p-3 min-w-[130px]">移工姓名 / 護照號</th>
-              <th class="p-3 min-w-[190px]">雇主 / 電話 / 地址</th>
+              <th class="p-3 min-w-[140px]">移工姓名 / 護照號碼</th>
+              <th class="p-3 min-w-[200px]">雇主 / 電話 / 地址</th>
               <th class="p-3">類別 / 費率</th>
               <th class="p-3">起聘/入境日</th>
               <th class="p-3">聘期到期日</th>
@@ -141,11 +141,9 @@
 
     <!-- 區塊 2: 待轉出人才池 (Pool) -->
     <div id="sectionPool" class="bg-white rounded-b-xl border border-t-0 border-slate-200 shadow-sm overflow-hidden p-4 space-y-4 hidden">
-      <div class="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-900 flex justify-between items-center">
-        <div>
-          <span class="font-bold">轉出人才池 (Transfer Pool)：</span>
-          收納因被照顧人往生、中途解約或轉換雇主中的印尼移工。點選「媒合新雇主」可直接移轉，並自動繼承既有年資與服務費級距！
-        </div>
+      <div class="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-900">
+        <span class="font-bold">轉出人才池 (Transfer Pool)：</span>
+        收納因被照顧人往生、中途解約或轉換雇主中的印尼移工。點選「媒合新雇主」可直接移轉並繼承既有服務費年資！
       </div>
 
       <div class="overflow-x-auto">
@@ -169,11 +167,9 @@
 
     <!-- 區塊 3: 期滿回國 / 離境歷史庫 (Returned) -->
     <div id="sectionReturned" class="bg-white rounded-b-xl border border-t-0 border-slate-200 shadow-sm overflow-hidden p-4 space-y-4 hidden">
-      <div class="bg-slate-100 border border-slate-200 rounded-lg p-3 text-xs text-slate-700 flex justify-between items-center">
-        <div>
-          <span class="font-bold">離境結案紀錄：</span>
-          外勞聘期屆滿回國或解約返鄉之封存紀錄。點選「為此雇主遞補新移工」可直接帶入原雇主姓名、電話與地址！
-        </div>
+      <div class="bg-slate-100 border border-slate-200 rounded-lg p-3 text-xs text-slate-700">
+        <span class="font-bold">離境結案紀錄：</span>
+        外勞聘期屆滿回國或解約返鄉之封存紀錄。點選「為此雇主遞補新移工」可直接帶入原雇主姓名、電話與地址！
       </div>
 
       <div class="overflow-x-auto">
@@ -223,8 +219,8 @@
           </select>
         </div>
         <div>
-          <label class="block font-medium mb-1">解約 / 辦理轉出公告日 *</label>
-          <input type="date" id="toDate" required class="w-full border rounded px-2.5 py-1.5 focus:outline-amber-500">
+          <label class="block font-medium mb-1">解約 / 辦理轉出公告日 (民國) *</label>
+          <div id="rocGroup_toDate" class="flex gap-1"></div>
         </div>
         <div class="pt-2 flex justify-end gap-2 border-t border-slate-100">
           <button type="button" onclick="closeTransferOutModal()" class="px-3 py-1.5 rounded border border-slate-300 text-slate-600">取消</button>
@@ -234,7 +230,7 @@
     </div>
   </div>
 
-  <!-- 媒合給新雇主 Modal (承接轉出池的移工) -->
+  <!-- 媒合給新雇主 Modal -->
   <div id="matchNewEmployerModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
     <div class="bg-white rounded-xl shadow-xl max-w-lg w-full overflow-hidden">
       <div class="bg-sky-700 text-white px-5 py-3 flex justify-between items-center">
@@ -254,7 +250,7 @@
             <input type="text" id="mEmployer" required placeholder="例: 林美麗" class="w-full border rounded px-2.5 py-1.5 focus:outline-sky-500">
           </div>
           <div>
-            <label class="block font-medium mb-1">新雇主電話</label>
+            <label class="block font-medium mb-1">新雇主電話 (選填)</label>
             <input type="tel" id="mPhone" placeholder="0988-123-456" class="w-full border rounded px-2.5 py-1.5 focus:outline-sky-500">
           </div>
         </div>
@@ -266,12 +262,12 @@
 
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="block font-medium mb-1">新合約承接生效日 *</label>
-            <input type="date" id="mTransferDate" required class="w-full border rounded px-2.5 py-1.5 focus:outline-sky-500">
+            <label class="block font-medium mb-1">新合約承接生效日 (民國) *</label>
+            <div id="rocGroup_mTransferDate" class="flex gap-1"></div>
           </div>
           <div>
-            <label class="block font-medium mb-1">核准聘僱到期日 *</label>
-            <input type="date" id="mContractExpiry" required class="w-full border rounded px-2.5 py-1.5 focus:outline-sky-500">
+            <label class="block font-medium mb-1">核准聘僱到期日 (民國) *</label>
+            <div id="rocGroup_mContractExpiry" class="flex gap-1"></div>
           </div>
         </div>
 
@@ -324,8 +320,8 @@
           </select>
         </div>
         <div>
-          <label class="block font-medium mb-1">搭機離境/結案日期 *</label>
-          <input type="date" id="returnDate" required class="w-full border rounded px-2.5 py-1.5 focus:outline-slate-500">
+          <label class="block font-medium mb-1">搭機離境/結案日期 (民國) *</label>
+          <div id="rocGroup_returnDate" class="flex gap-1"></div>
         </div>
         <div class="pt-2 flex justify-end gap-2 border-t border-slate-100">
           <button type="button" onclick="closeReturnModal()" class="px-3 py-1.5 rounded border border-slate-300 text-slate-600">取消</button>
@@ -354,11 +350,11 @@
         </div>
         <div>
           <label class="block text-slate-500 mb-1">原本護照到期日</label>
-          <p id="renewOldDate" class="text-slate-600"></p>
+          <p id="renewOldDate" class="text-slate-600 font-mono"></p>
         </div>
         <div>
-          <label class="block font-medium mb-1">新換發護照到期日 *</label>
-          <input type="date" id="renewNewDate" required class="w-full border rounded px-2.5 py-1.5 focus:outline-indigo-500">
+          <label class="block font-medium mb-1">新換發護照到期日 (民國) *</label>
+          <div id="rocGroup_renewNewDate" class="flex gap-1"></div>
         </div>
         <div class="pt-2 flex justify-end gap-2 border-t border-slate-100">
           <button type="button" onclick="closeRenewPassportModal()" class="px-3 py-1.5 rounded border border-slate-300 text-slate-600">取消</button>
@@ -404,9 +400,9 @@
     </div>
   </div>
 
-  <!-- 新增/編輯 Modal 彈窗 -->
+  <!-- 新增/編輯 Modal 彈窗 (全民國年選單 + 缺件註記) -->
   <div id="workerModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
-    <div class="bg-white rounded-xl shadow-xl max-w-xl w-full overflow-hidden max-h-[90vh] overflow-y-auto">
+    <div class="bg-white rounded-xl shadow-xl max-w-xl w-full overflow-hidden max-h-[92vh] overflow-y-auto">
       <div class="bg-indigo-900 text-white px-5 py-3 flex justify-between items-center sticky top-0 z-10">
         <h3 id="modalTitle" class="text-sm font-semibold">新增移工案件</h3>
         <button onclick="closeModal()" class="text-slate-300 hover:text-white text-lg">&times;</button>
@@ -414,6 +410,7 @@
       <form id="workerForm" onsubmit="saveWorker(event)" class="p-5 space-y-4 text-xs">
         <input type="hidden" id="editId">
 
+        <!-- 基本資料 -->
         <div class="grid grid-cols-3 gap-3">
           <div>
             <label class="block font-medium mb-1">自訂編號 *</label>
@@ -424,9 +421,18 @@
             <input type="text" id="wName" required placeholder="例: SITI (阿米)" class="w-full border rounded px-2.5 py-1.5 focus:outline-indigo-500">
           </div>
           <div>
-            <label class="block font-medium mb-1">護照號碼</label>
+            <label class="block font-medium mb-1">護照號碼 (選填)</label>
             <input type="text" id="wPassportNo" placeholder="例: C1234567" class="w-full border rounded px-2.5 py-1.5 uppercase focus:outline-indigo-500">
           </div>
+        </div>
+
+        <!-- 缺件追蹤勾選 -->
+        <div class="bg-rose-50 border border-rose-200 rounded-lg p-2.5 flex items-center gap-4">
+          <span class="font-bold text-rose-800">缺件警示註記：</span>
+          <label class="flex items-center gap-1.5 cursor-pointer text-rose-900 font-medium">
+            <input type="checkbox" id="wMissingPassportCopy" class="rounded text-rose-600 focus:ring-rose-500">
+            <span>缺少護照影本 (待向外勞或國外催討)</span>
+          </label>
         </div>
 
         <div class="grid grid-cols-2 gap-3">
@@ -435,8 +441,8 @@
             <input type="text" id="wEmployer" required placeholder="例: 陳大明" class="w-full border rounded px-2.5 py-1.5 focus:outline-indigo-500">
           </div>
           <div>
-            <label class="block font-medium mb-1">雇主聯絡電話</label>
-            <input type="tel" id="wPhone" placeholder="0912-345-678" class="w-full border rounded px-2.5 py-1.5 focus:outline-indigo-500">
+            <label class="block font-medium mb-1">雇主聯絡電話 (選填，未填會標註提醒)</label>
+            <input type="tel" id="wPhone" placeholder="未取得可暫留空" class="w-full border rounded px-2.5 py-1.5 focus:outline-indigo-500">
           </div>
         </div>
 
@@ -454,18 +460,18 @@
             </select>
           </div>
           <div>
-            <label class="block font-medium mb-1">本次入境日 / 起聘日 *</label>
-            <input type="date" id="wArrivalDate" required class="w-full border rounded px-2 py-1.5 focus:outline-indigo-500">
+            <label class="block font-medium mb-1">本次入境日 / 起聘日 (民國) *</label>
+            <div id="rocGroup_wArrivalDate" class="flex gap-1"></div>
           </div>
         </div>
 
         <div id="transferFieldGroup" class="hidden grid grid-cols-2 gap-3 bg-sky-50 p-2.5 rounded border border-sky-200">
           <div>
-            <label class="block font-medium text-sky-800 mb-1">承接生效日 *</label>
-            <input type="date" id="wTransferDate" class="w-full border border-sky-300 rounded px-2 py-1.5 bg-white">
+            <label class="block font-medium text-sky-800 mb-1">承接生效日 (民國) *</label>
+            <div id="rocGroup_wTransferDate" class="flex gap-1"></div>
           </div>
           <div class="text-[11px] text-sky-700 flex items-center">
-            * 承接者以承接日開始計算收款；滿期換約或引進者以入境日起算。
+            * 承接者以承接日起算收費點；入境日用來判定累計服務費年資。
           </div>
         </div>
 
@@ -514,12 +520,12 @@
 
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="block font-medium mb-1">護照到期日 *</label>
-            <input type="date" id="wPassportExpiry" required class="w-full border rounded px-2.5 py-1.5 focus:outline-indigo-500">
+            <label class="block font-medium mb-1">護照到期日 (民國) *</label>
+            <div id="rocGroup_wPassportExpiry" class="flex gap-1"></div>
           </div>
           <div>
-            <label class="block font-medium mb-1">聘僱許可到期日 *</label>
-            <input type="date" id="wContractExpiry" required class="w-full border rounded px-2.5 py-1.5 focus:outline-indigo-500">
+            <label class="block font-medium mb-1">聘僱許可到期日 (民國) *</label>
+            <div id="rocGroup_wContractExpiry" class="flex gap-1"></div>
           </div>
         </div>
 
@@ -547,7 +553,7 @@
   </div>
 
   <script>
-    // ====== 民國年轉換工具函數 ======
+    // ====== 民國年核心工具 ======
     function toRocYear(year) {
       return year - 1911;
     }
@@ -560,6 +566,77 @@
       return `${rocY}/${parts[1]}/${parts[2]}`;
     }
 
+    // 建立民國年/月/日下拉組件 (自動產生 民國 110 ~ 125 年選單)
+    function setupRocDatePicker(containerId, initialDateStr = '') {
+      const container = document.getElementById(containerId);
+      if (!container) return;
+
+      let rocY = 115;
+      let month = 1;
+      let day = 1;
+
+      if (initialDateStr && initialDateStr.includes('-')) {
+        const p = initialDateStr.split('-');
+        rocY = Number(p[0]) - 1911;
+        month = Number(p[1]);
+        day = Number(p[2]);
+      } else {
+        const n = new Date();
+        rocY = n.getFullYear() - 1911;
+        month = n.getMonth() + 1;
+        day = n.getDate();
+      }
+
+      let yOptions = '';
+      for (let y = 110; y <= 126; y++) {
+        yOptions += `<option value="${y}" ${y === rocY ? 'selected' : ''}>民國 ${y} 年</option>`;
+      }
+
+      let mOptions = '';
+      for (let m = 1; m <= 12; m++) {
+        mOptions += `<option value="${m}" ${m === month ? 'selected' : ''}>${m} 月</option>`;
+      }
+
+      let dOptions = '';
+      for (let d = 1; d <= 31; d++) {
+        dOptions += `<option value="${d}" ${d === day ? 'selected' : ''}>${d} 日</option>`;
+      }
+
+      container.innerHTML = `
+        <select class="roc-year border rounded px-1.5 py-1.5 bg-white text-xs flex-1 focus:outline-indigo-500">${yOptions}</select>
+        <select class="roc-month border rounded px-1 py-1.5 bg-white text-xs w-16 focus:outline-indigo-500">${mOptions}</select>
+        <select class="roc-day border rounded px-1 py-1.5 bg-white text-xs w-16 focus:outline-indigo-500">${dOptions}</select>
+      `;
+    }
+
+    // 從民國年下拉組件取出標準 YYYY-MM-DD
+    function getRocDateValue(containerId) {
+      const container = document.getElementById(containerId);
+      if (!container) return '';
+      const ySelect = container.querySelector('.roc-year');
+      const mSelect = container.querySelector('.roc-month');
+      const dSelect = container.querySelector('.roc-day');
+      if (!ySelect || !mSelect || !dSelect) return '';
+
+      const adYear = Number(ySelect.value) + 1911;
+      const mStr = String(mSelect.value).padStart(2, '0');
+      const dStr = String(dSelect.value).padStart(2, '0');
+      return `${adYear}-${mStr}-${dStr}`;
+    }
+
+    // 初始化所有的民國年下拉選單
+    function initAllRocPickers() {
+      setupRocDatePicker('rocGroup_wArrivalDate');
+      setupRocDatePicker('rocGroup_wTransferDate');
+      setupRocDatePicker('rocGroup_wPassportExpiry');
+      setupRocDatePicker('rocGroup_wContractExpiry');
+      setupRocDatePicker('rocGroup_toDate');
+      setupRocDatePicker('rocGroup_mTransferDate');
+      setupRocDatePicker('rocGroup_mContractExpiry');
+      setupRocDatePicker('rocGroup_returnDate');
+      setupRocDatePicker('rocGroup_renewNewDate');
+    }
+
     let workers = JSON.parse(localStorage.getItem('indo_workers_db')) || [];
     let billingHistory = JSON.parse(localStorage.getItem('indo_billing_db')) || {};
     
@@ -568,7 +645,7 @@
     });
 
     const currentYear = new Date().getFullYear();
-    let displayYear = currentYear; // 內部運算維持西元年，介面全轉民國年
+    let displayYear = currentYear;
     let currentMainTab = 'active';
     let activeWorkerForMulti = null;
 
@@ -577,7 +654,6 @@
       localStorage.setItem('indo_billing_db', JSON.stringify(billingHistory));
     }
 
-    // 初始化年份選單（顯示民國年）
     function initYearSelector() {
       const select = document.getElementById('yearSelect');
       select.innerHTML = '';
@@ -708,7 +784,7 @@
       if (tab === 'returned') renderReturnedTable();
     }
 
-    // ====== 在籍名冊渲染 (全民國年) ======
+    // ====== 在籍名冊渲染 (含缺件警示標籤) ======
     function renderActiveTable() {
       const tbody = document.getElementById('workerTableBody');
       const keyword = document.getElementById('searchInput').value.trim().toLowerCase();
@@ -719,11 +795,15 @@
       let returnedCount = 0;
       let passportAlertCount = 0;
       let contractAlertCount = 0;
+      let missingDocsCount = 0;
 
       workers.forEach(w => {
         if (w.status === 'POOL') poolCount++;
         else if (w.status === 'RETURNED') returnedCount++;
-        else activeCount++;
+        else {
+          activeCount++;
+          if (w.missingPassportCopy || !w.phone) missingDocsCount++;
+        }
       });
 
       const activeList = workers.filter(w => (!w.status || w.status === 'ACTIVE')).filter(w => {
@@ -796,6 +876,15 @@
         let feeBadge = w.feeMode === 'FIXED_1500' ? `<span class="bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded text-[10px] font-medium border border-emerald-200">固定$1500</span>` : (w.feeMode === 'CUSTOM_MONTHS' ? `<span class="bg-amber-50 text-amber-700 px-1.5 py-0.5 rounded text-[10px] font-medium border border-amber-200">累計年資</span>` : `<span class="bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded text-[10px]">標準1800起</span>`);
         const effectiveDateStr = w.type === '承接' && w.transferDate ? w.transferDate : w.arrivalDate;
 
+        // 缺件標籤提示
+        let missingBadge = '';
+        if (w.missingPassportCopy) {
+          missingBadge += `<span class="bg-rose-100 text-rose-700 px-1.5 py-0.2 rounded text-[10px] font-bold block mt-0.5">⚠️ 缺護照影本</span>`;
+        }
+        if (!w.phone) {
+          missingBadge += `<span class="bg-amber-100 text-amber-800 px-1.5 py-0.2 rounded text-[10px] font-bold block mt-0.5">⚠️ 缺雇主電話</span>`;
+        }
+
         const tr = document.createElement('tr');
         tr.className = "hover:bg-slate-50";
         tr.innerHTML = `
@@ -805,11 +894,12 @@
           <td class="p-3">
             <div class="font-bold text-slate-800">${w.name}</div>
             <div class="text-[10px] text-indigo-600 font-mono font-medium">${w.passportNo ? `🪪 ${w.passportNo}` : '<span class="text-slate-400">未填護照號</span>'}</div>
+            ${w.missingPassportCopy ? '<span class="text-[10px] text-rose-600 font-bold">⚠️ 缺護照影本</span>' : ''}
           </td>
           <td class="p-3">
             <div class="font-medium text-slate-800">${w.employer}</div>
-            <div class="text-slate-500 text-[11px]">${w.phone || '-'}</div>
-            <div class="text-slate-400 text-[10px] truncate max-w-[190px]" title="${w.address || ''}">📍 ${w.address || '未填寫地址'}</div>
+            <div class="text-[11px]">${w.phone ? `<span class="text-slate-500">${w.phone}</span>` : '<span class="text-amber-600 font-semibold bg-amber-50 px-1 rounded">⚠️ 缺電話</span>'}</div>
+            <div class="text-slate-400 text-[10px] truncate max-w-[200px]" title="${w.address || ''}">📍 ${w.address || '未填寫地址'}</div>
           </td>
           <td class="p-3 space-y-1">
             <div>${w.type === '承接' ? `<span class="bg-sky-100 text-sky-700 px-1.5 py-0.5 rounded-full font-medium text-[10px]">承接</span>` : `<span class="bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded-full text-[10px]">引進</span>`}</div>
@@ -832,7 +922,7 @@
       });
 
       document.getElementById('statTotal').innerText = `${activeCount} 人`;
-      document.getElementById('statTransferPool').innerText = `${poolCount} 人`;
+      document.getElementById('statMissingDocs').innerText = `${missingDocsCount} 人`;
       document.getElementById('statPassportAlert').innerText = `${passportAlertCount} 人`;
       document.getElementById('statContractAlert').innerText = `${contractAlertCount} 人`;
 
@@ -861,10 +951,11 @@
           <td class="p-3">
             <div class="font-bold text-slate-800">${w.name}</div>
             <div class="text-[10px] text-slate-500">🪪 ${w.passportNo || '未填護照號'}</div>
+            ${w.missingPassportCopy ? '<span class="text-[10px] text-rose-600 font-bold">⚠️ 缺護照影本</span>' : ''}
           </td>
           <td class="p-3">
             <div class="font-medium text-slate-700">${w.employer}</div>
-            <div class="text-slate-400 text-[11px]">${w.phone || '-'}</div>
+            <div class="text-[11px]">${w.phone ? `<span class="text-slate-400">${w.phone}</span>` : '<span class="text-amber-600 font-semibold bg-amber-50 px-1 rounded">⚠️ 缺電話</span>'}</div>
           </td>
           <td class="p-3">
             <span class="bg-amber-100 text-amber-800 px-2 py-0.5 rounded font-semibold text-[11px]">${w.transferReason || '轉換雇主'}</span>
@@ -909,7 +1000,7 @@
           </td>
           <td class="p-3">
             <div class="font-medium text-slate-800">${w.employer}</div>
-            <div class="text-slate-400 text-[11px]">${w.phone || '-'} ｜ 📍 ${w.address || '-'}</div>
+            <div class="text-slate-400 text-[11px]">${w.phone || '無電話'} ｜ 📍 ${w.address || '-'}</div>
           </td>
           <td class="p-3 font-mono text-slate-600">${toRocDateString(w.returnDate)}</td>
           <td class="p-3">
@@ -931,7 +1022,7 @@
       document.getElementById('toWorkerId').value = w.id;
       document.getElementById('toWorkerName').innerText = `${w.name} (${w.code})`;
       document.getElementById('toEmployerName').innerText = `${w.employer} (${w.address || ''})`;
-      document.getElementById('toDate').value = new Date().toISOString().slice(0,10);
+      setupRocDatePicker('rocGroup_toDate', new Date().toISOString().slice(0,10));
       document.getElementById('transferOutModal').classList.remove('hidden');
     }
 
@@ -946,7 +1037,7 @@
       if (w) {
         w.status = 'POOL';
         w.transferReason = document.getElementById('toReason').value;
-        w.transferOutDate = document.getElementById('toDate').value;
+        w.transferOutDate = getRocDateValue('rocGroup_toDate');
         w.notes = (w.notes ? w.notes + "；" : "") + `於民國 ${toRocDateString(w.transferOutDate)} 辦理轉出 (${w.transferReason})`;
         saveToStorage();
         closeTransferOutModal();
@@ -979,8 +1070,8 @@
       document.getElementById('mEmployer').value = '';
       document.getElementById('mPhone').value = '';
       document.getElementById('mAddress').value = '';
-      document.getElementById('mTransferDate').value = new Date().toISOString().slice(0,10);
-      document.getElementById('mContractExpiry').value = w.contractExpiry;
+      setupRocDatePicker('rocGroup_mTransferDate', new Date().toISOString().slice(0,10));
+      setupRocDatePicker('rocGroup_mContractExpiry', w.contractExpiry || '');
       document.getElementById('mNotes').value = `承接自原雇主 ${w.employer}`;
 
       document.getElementById('matchNewEmployerModal').classList.remove('hidden');
@@ -1000,8 +1091,8 @@
         w.phone = document.getElementById('mPhone').value.trim();
         w.address = document.getElementById('mAddress').value.trim();
         w.type = '承接';
-        w.transferDate = document.getElementById('mTransferDate').value;
-        w.contractExpiry = document.getElementById('mContractExpiry').value;
+        w.transferDate = getRocDateValue('rocGroup_mTransferDate');
+        w.contractExpiry = getRocDateValue('rocGroup_mContractExpiry');
         w.paymentMethod = document.getElementById('mPaymentMethod').value;
         w.notes = (w.notes ? w.notes + "；" : "") + `於民國 ${toRocDateString(w.transferDate)} 由新雇主 ${w.employer} 承接`;
         w.feeMode = 'NORMAL';
@@ -1019,7 +1110,7 @@
       document.getElementById('returnWorkerId').value = w.id;
       document.getElementById('returnWorkerName').innerText = `${w.name} (${w.code})`;
       document.getElementById('returnEmployerName').innerText = `${w.employer}`;
-      document.getElementById('returnDate').value = new Date().toISOString().slice(0,10);
+      setupRocDatePicker('rocGroup_returnDate', new Date().toISOString().slice(0,10));
       document.getElementById('returnModal').classList.remove('hidden');
     }
 
@@ -1034,7 +1125,7 @@
       if (w) {
         w.status = 'RETURNED';
         w.returnReason = document.getElementById('returnReason').value;
-        w.returnDate = document.getElementById('returnDate').value;
+        w.returnDate = getRocDateValue('rocGroup_returnDate');
         w.notes = (w.notes ? w.notes + "；" : "") + `於民國 ${toRocDateString(w.returnDate)} ${w.returnReason} 離境封存`;
         saveToStorage();
         closeReturnModal();
@@ -1074,7 +1165,7 @@
       document.getElementById('renewWorkerName').innerText = `${w.name} (${w.code || ''})`;
       document.getElementById('renewPassportNo').value = w.passportNo || '';
       document.getElementById('renewOldDate').innerText = `民國 ${toRocDateString(w.passportExpiry)}`;
-      document.getElementById('renewNewDate').value = '';
+      setupRocDatePicker('rocGroup_renewNewDate', w.passportExpiry || '');
       document.getElementById('renewPassportModal').classList.remove('hidden');
     }
 
@@ -1085,7 +1176,7 @@
     function saveRenewPassport(e) {
       e.preventDefault();
       const id = document.getElementById('renewWorkerId').value;
-      const newDate = document.getElementById('renewNewDate').value;
+      const newDate = getRocDateValue('rocGroup_renewNewDate');
       const newPassportNo = document.getElementById('renewPassportNo').value.trim().toUpperCase();
       const w = workers.find(item => item.id === id);
       if (w) {
@@ -1189,11 +1280,8 @@
       const group = document.getElementById('transferFieldGroup');
       if (type === '承接') {
         group.classList.remove('hidden');
-        document.getElementById('wTransferDate').required = true;
       } else {
         group.classList.add('hidden');
-        document.getElementById('wTransferDate').required = false;
-        document.getElementById('wTransferDate').value = '';
       }
     }
 
@@ -1216,7 +1304,22 @@
         document.getElementById('wFeeMode').value = "NORMAL";
         document.getElementById('wFirstMonthMedical').value = "0";
         document.getElementById('wFirstMonthArc').value = "3030";
+        document.getElementById('wMissingPassportCopy').checked = false;
         document.getElementById('modalTitle').innerText = "新增移工案件";
+        
+        setupRocDatePicker('rocGroup_wArrivalDate', new Date().toISOString().slice(0,10));
+        setupRocDatePicker('rocGroup_wTransferDate', new Date().toISOString().slice(0,10));
+        
+        // 預設聘約為 3 年後
+        const d3 = new Date();
+        d3.setFullYear(d3.getFullYear() + 3);
+        setupRocDatePicker('rocGroup_wContractExpiry', d3.toISOString().slice(0,10));
+        
+        // 預設護照為 5 年後
+        const d5 = new Date();
+        d5.setFullYear(d5.getFullYear() + 5);
+        setupRocDatePicker('rocGroup_wPassportExpiry', d5.toISOString().slice(0,10));
+
         toggleTransferField();
         toggleSeniorMonthsField();
       }
@@ -1237,18 +1340,19 @@
         code: document.getElementById('wCode').value.trim(),
         name: document.getElementById('wName').value.trim(),
         passportNo: document.getElementById('wPassportNo').value.trim().toUpperCase(),
+        missingPassportCopy: document.getElementById('wMissingPassportCopy').checked,
         employer: document.getElementById('wEmployer').value.trim(),
         phone: document.getElementById('wPhone').value.trim(),
         address: document.getElementById('wAddress').value.trim(),
         type: document.getElementById('wType').value,
-        arrivalDate: document.getElementById('wArrivalDate').value,
-        transferDate: document.getElementById('wTransferDate').value,
+        arrivalDate: getRocDateValue('rocGroup_wArrivalDate'),
+        transferDate: getRocDateValue('rocGroup_wTransferDate'),
         feeMode: document.getElementById('wFeeMode').value,
         priorMonths: Number(document.getElementById('wPriorMonths').value || 0),
         firstMonthMedical: Number(document.getElementById('wFirstMonthMedical').value || 0),
         firstMonthArc: Number(document.getElementById('wFirstMonthArc').value || 0),
-        contractExpiry: document.getElementById('wContractExpiry').value,
-        passportExpiry: document.getElementById('wPassportExpiry').value,
+        contractExpiry: getRocDateValue('rocGroup_wContractExpiry'),
+        passportExpiry: getRocDateValue('rocGroup_wPassportExpiry'),
         paymentMethod: document.getElementById('wPaymentMethod').value,
         notes: document.getElementById('wNotes').value.trim(),
       };
@@ -1272,20 +1376,21 @@
       document.getElementById('wCode').value = w.code || '';
       document.getElementById('wName').value = w.name;
       document.getElementById('wPassportNo').value = w.passportNo || '';
+      document.getElementById('wMissingPassportCopy').checked = !!w.missingPassportCopy;
       document.getElementById('wEmployer').value = w.employer;
       document.getElementById('wPhone').value = w.phone || '';
       document.getElementById('wAddress').value = w.address || '';
       document.getElementById('wType').value = w.type;
-      document.getElementById('wArrivalDate').value = w.arrivalDate;
-      document.getElementById('wTransferDate').value = w.transferDate || '';
       
+      setupRocDatePicker('rocGroup_wArrivalDate', w.arrivalDate || '');
+      setupRocDatePicker('rocGroup_wTransferDate', w.transferDate || '');
+      setupRocDatePicker('rocGroup_wContractExpiry', w.contractExpiry || '');
+      setupRocDatePicker('rocGroup_wPassportExpiry', w.passportExpiry || '');
+
       document.getElementById('wFeeMode').value = w.feeMode || 'NORMAL';
       document.getElementById('wPriorMonths').value = w.priorMonths || 0;
       document.getElementById('wFirstMonthMedical').value = w.firstMonthMedical !== undefined ? w.firstMonthMedical : 0;
       document.getElementById('wFirstMonthArc').value = w.firstMonthArc !== undefined ? w.firstMonthArc : 3030;
-
-      document.getElementById('wContractExpiry').value = w.contractExpiry;
-      document.getElementById('wPassportExpiry').value = w.passportExpiry;
       document.getElementById('wPaymentMethod').value = w.paymentMethod;
       document.getElementById('wNotes').value = w.notes || '';
       
@@ -1306,9 +1411,9 @@
     }
 
     function exportCSV() {
-      let csv = "\uFEFF狀態,自訂編號,移工姓名,護照號碼,所屬雇主,電話,雇主地址,來源類型,收費模式,入境/起聘日(民國),承接日(民國),聘僱到期日(民國),護照到期日(民國),收費方式,備註\n";
+      let csv = "\uFEFF狀態,自訂編號,移工姓名,護照號碼,缺護照影本,所屬雇主,電話,雇主地址,來源類型,收費模式,入境/起聘日(民國),承接日(民國),聘僱到期日(民國),護照到期日(民國),收費方式,備註\n";
       workers.forEach(w => {
-        csv += `"${w.status || 'ACTIVE'}","${w.code || ''}","${w.name}","${w.passportNo || ''}","${w.employer}","${w.phone || ''}","${w.address || ''}","${w.type}","${w.feeMode || 'NORMAL'}","${toRocDateString(w.arrivalDate)}","${toRocDateString(w.transferDate)}","${toRocDateString(w.contractExpiry)}","${toRocDateString(w.passportExpiry)}","${w.paymentMethod}","${w.notes || ''}"\n`;
+        csv += `"${w.status || 'ACTIVE'}","${w.code || ''}","${w.name}","${w.passportNo || ''}","${w.missingPassportCopy ? '是' : '否'}","${w.employer}","${w.phone || ''}","${w.address || ''}","${w.type}","${w.feeMode || 'NORMAL'}","${toRocDateString(w.arrivalDate)}","${toRocDateString(w.transferDate)}","${toRocDateString(w.contractExpiry)}","${toRocDateString(w.passportExpiry)}","${w.paymentMethod}","${w.notes || ''}"\n`;
       });
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
