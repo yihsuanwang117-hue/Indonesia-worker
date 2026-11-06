@@ -8,12 +8,36 @@
   <!-- Firebase 官方雲端 SDK -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
   <style>
     body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
   </style>
 </head>
 <body class="bg-slate-50 min-h-screen text-slate-800">
-
+<!-- 資安防護：登入遮罩視窗 -->
+<div id="loginOverlay" class="fixed inset-0 bg-slate-900/90 backdrop-blur-md z-50 flex items-center justify-center p-4">
+  <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 space-y-4">
+    <div class="text-center">
+      <div class="w-12 h-12 bg-indigo-100 text-indigo-700 rounded-full flex items-center justify-center mx-auto mb-2 text-xl font-bold">🔒</div>
+      <h2 class="text-lg font-bold text-slate-800">IndoWorker Pro 登入</h2>
+      <p class="text-xs text-slate-500 mt-1">請登入管理員帳號以解除雲端安全鎖</p>
+    </div>
+    <form onsubmit="handleFirebaseLogin(event)" class="space-y-3 text-xs">
+      <div>
+        <label class="block font-medium mb-1">管理員帳號 (Email)</label>
+        <input type="email" id="authEmail" required placeholder="admin@indoworker.com" class="w-full border rounded-lg px-3 py-2 focus:outline-indigo-500">
+      </div>
+      <div>
+        <label class="block font-medium mb-1">密碼</label>
+        <input type="password" id="authPassword" required placeholder="••••••••" class="w-full border rounded-lg px-3 py-2 focus:outline-indigo-500">
+      </div>
+      <p id="loginErrorMsg" class="text-rose-600 text-xs hidden"></p>
+      <button type="submit" id="loginBtn" class="w-full bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white font-bold py-2.5 rounded-lg shadow transition">
+        安全登入解鎖
+      </button>
+    </form>
+  </div>
+</div>
   <!-- 頂部導航 -->
   <header class="bg-indigo-900 text-white shadow sticky top-0 z-30">
     <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap justify-between items-center gap-3">
@@ -845,28 +869,78 @@
       appId: "1:114397477412:web:f76c1dae3bffc7ff0536b1"
     };
 
-    // 初始化 Firebase 與 Firestore 資料庫
+    // ====== 初始化 Firebase 與 Auth/Firestore ======
     firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
     const db = firebase.firestore();
 
     // ====== 2. 本機暫存與雲端即時同步 ======
     let workers = JSON.parse(localStorage.getItem('indo_workers_db')) || [];
     let billingHistory = JSON.parse(localStorage.getItem('indo_billing_db')) || {};
 
-    // 啟動雲端即時監聽：只要手機或另一台電腦有任何改動，畫面秒級自動重繪
-    db.collection("workers_meta").doc("current").onSnapshot(doc => {
-      if (doc.exists) {
-        const data = doc.data();
-        if (data.workers) workers = data.workers;
-        if (data.billingHistory) billingHistory = data.billingHistory;
-        localStorage.setItem('indo_workers_db', JSON.stringify(workers));
-        localStorage.setItem('indo_billing_db', JSON.stringify(billingHistory));
-        if (typeof updateAgencySuggestions === 'function') updateAgencySuggestions();
-        if (typeof updateFilterAgencyOptions === 'function') updateFilterAgencyOptions();
-        if (typeof renderActiveTable === 'function') renderActiveTable();
-        if (typeof renderData === 'function') renderData();
+   // ====== 監聽管理員登入狀態 (有通過驗證才放行連線 Firestore) ======
+    auth.onAuthStateChanged(user => {
+      const overlay = document.getElementById('loginOverlay');
+      const statusBadge = document.getElementById('cloudStatus');
+      
+      if (user) {
+        // 1. 登入成功：解開全螢幕遮罩
+        if (overlay) overlay.classList.add('hidden');
+        if (statusBadge) {
+          statusBadge.innerHTML = `🟢 雲端已連線 (${user.email})`;
+          statusBadge.className = "text-[10px] bg-emerald-600 px-2 py-0.5 rounded-full text-white font-medium";
+        }
+
+        // 2. 啟動 Firestore 雲端資料庫即時監聽
+        db.collection("workers_meta").doc("current").onSnapshot(doc => {
+          if (doc.exists) {
+            const data = doc.data();
+            if (data.workers) workers = data.workers;
+            if (data.billingHistory) billingHistory = data.billingHistory;
+            localStorage.setItem('indo_workers_db', JSON.stringify(workers));
+            localStorage.setItem('indo_billing_db', JSON.stringify(billingHistory));
+            if (typeof updateAgencySuggestions === 'function') updateAgencySuggestions();
+            if (typeof updateFilterAgencyOptions === 'function') updateFilterAgencyOptions();
+            if (typeof renderActiveTable === 'function') renderActiveTable();
+            if (typeof renderData === 'function') renderData();
+          }
+        }, err => {
+          console.error("雲端讀取拒絕：", err);
+        });
+      } else {
+        // 未登入：鎖定畫面並彈出遮罩
+        if (overlay) overlay.classList.remove('hidden');
+        if (statusBadge) {
+          statusBadge.innerHTML = "🔒 尚未登入驗證";
+          statusBadge.className = "text-[10px] bg-amber-600 px-2 py-0.5 rounded-full text-white font-medium";
+        }
       }
     });
+
+    // 處理登入表單提交事件
+    function handleFirebaseLogin(e) {
+      e.preventDefault();
+      const email = document.getElementById('authEmail').value.trim();
+      const pass = document.getElementById('authPassword').value;
+      const errBox = document.getElementById('loginErrorMsg');
+      const btn = document.getElementById('loginBtn');
+
+      errBox.classList.add('hidden');
+      btn.innerText = "驗證身分中...";
+      btn.disabled = true;
+
+      auth.signInWithEmailAndPassword(email, pass)
+        .then(() => {
+          btn.innerText = "安全登入解鎖";
+          btn.disabled = false;
+        })
+        .catch(err => {
+          btn.innerText = "安全登入解鎖";
+          btn.disabled = false;
+          errBox.innerText = "帳號或密碼錯誤，請確認！";
+          errBox.classList.remove('hidden');
+        });
+    }
 
     // 統一儲存函數：每次新增、編輯、點擊綠點時，同時存到本機並推送到 Firebase
     function saveToStorage() {
