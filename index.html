@@ -1491,7 +1491,7 @@ function renderOverdueTable() {
     overdueWorkers.forEach(item => {
       const w = item.worker;
       const info = item.info;
-      const monthsDisplay = (info.unpaidMonths || []).maconst monthsDisplay = formatOverdueMonthsSummary(info.unpaidMonths);p(m => m.rocLabel || m.ym).join(', ');
+      const monthsDisplay = formatOverdueMonthsSummary(info.unpaidMonths);
       
       const tr = document.createElement('tr');
       tr.className = "hover:bg-slate-50 border-b border-slate-100 transition-colors";
@@ -1552,7 +1552,7 @@ function showOverdueReadOnlyCard(item) {
 
   const w = item.worker;
   const info = item.info;
-  const summaryHtml = formatOverdueMonthsSummary(info.unpaidMonths);
+  const summaryHtml = formatOverdueSummary(info.unpaidMonths);
 
   // 組合欠費月份明細清單
   const monthsHtml = (info.unpaidMonths || []).map(m => `
