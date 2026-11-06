@@ -982,8 +982,7 @@
       });
     }
     // ====== 3. 資料庫與全域狀態 ======
-    let workers = JSON.parse(localStorage.getItem('indo_workers_db')) || [];
-    let billingHistory = JSON.parse(localStorage.getItem('indo_billing_db')) || {};
+  
     
     workers.forEach(w => {
       if (!w.status) w.status = 'ACTIVE';
