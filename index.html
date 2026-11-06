@@ -196,8 +196,8 @@
         </div>
       </div>
 
-      <div class="overflow-x-auto">
-        <table class="w-full text-left text-xs border-collapse">
+<div class="hidden md:block overflow-x-auto">
+  <table class="w-full text-left text-xs border-collapse">
           <thead>
             <tr class="bg-slate-100 text-slate-600 border-b border-slate-200">
               <th class="p-3 min-w-[90px]">編號</th>
@@ -213,6 +213,8 @@
           <tbody id="overdueTableBody" class="divide-y divide-slate-100"></tbody>
         </table>
       </div>
+      <!-- 欠繳追帳手機版卡片容器 -->
+<div id="mobileOverdueList" class="block md:hidden space-y-3 p-2"></div>
     </div>
 
     <!-- 區塊 3: 待轉出人才池 (Pool) -->
@@ -222,8 +224,8 @@
         收納被照顧人往生、中途解約或轉換雇主中的移工。點選「媒合新雇主」可直接移轉並繼承既有年資！
       </div>
 
-      <div class="overflow-x-auto">
-        <table class="w-full text-left text-xs border-collapse">
+<div class="hidden md:block overflow-x-auto">
+  <table class="w-full text-left text-xs border-collapse">
           <thead>
             <tr class="bg-slate-100 text-slate-600 border-b border-slate-200">
               <th class="p-3 min-w-[90px]">編號</th>
@@ -240,6 +242,8 @@
           <tbody id="poolTableBody" class="divide-y divide-slate-100"></tbody>
         </table>
       </div>
+      <!-- 轉出庫手機版卡片容器 -->
+<div id="mobilePoolList" class="block md:hidden space-y-3 p-2"></div>
     </div>
 
     <!-- 區塊 4: 期滿回國 / 離境歷史庫 (Returned) -->
@@ -1389,7 +1393,8 @@ const firebaseConfig = {
     function renderOverdueTable() {
       const tbody = document.getElementById('overdueTableBody');
       tbody.innerHTML = '';
-
+   const mobileOverdueList = document.getElementById('mobileOverdueList');
+if (mobileOverdueList) mobileOverdueList.innerHTML = '';
       const activeList = workers.filter(w => (!w.status || w.status === 'ACTIVE'));
       let overdueWorkers = [];
 
@@ -1404,6 +1409,7 @@ const firebaseConfig = {
 
       if (overdueWorkers.length === 0) {
         tbody.innerHTML = `<tr><td colspan="8" class="text-center p-8 text-emerald-600 font-bold text-sm">🎉 太棒了！目前在籍移工完全沒有欠費未收的期數。</td></tr>`;
+        if (mobileOverdueList) mobileOverdueList.innerHTML = `<div class="p-6 text-center text-emerald-600 font-bold bg-white rounded-xl shadow-sm border border-emerald-100">🎉 太棒了！目前在籍移工完全沒有欠費未收的期數。</div>`;
         return;
       }
 
@@ -1446,6 +1452,91 @@ const firebaseConfig = {
           </td>
         `;
         tbody.appendChild(tr);
+        // 欠繳追帳專用手機卡片
+    if (mobileOverdueList) {
+      const w = item.worker;
+      const info = item.info;
+      const card = document.createElement('div');
+      card.className = "bg-white p-4 rounded-xl shadow-sm border border-rose-200 space-y-2.5";
+      card.innerHTML = `
+        <div class="flex justify-between items-start border-b border-rose-100 pb-2">
+          <div>
+            <div class="text-base font-bold text-slate-800">${w.name || '未命名'}</div>
+            <div class="text-xs font-mono text-slate-400">${w.arcNo || w.id || '-'}</div>
+          </div>
+          <span class="bg-rose-100 text-rose-700 text-xs font-bold px-2.5 py-1 rounded-full">
+            欠 ${info.count} 期 / NT$ ${info.totalAmount.toLocaleString()}
+          </span>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2 text-xs text-slate-600 pt-1">
+          <div>
+            <span class="text-slate-400 block text-[10px]">雇主 / 電話</span>
+            <span class="font-medium text-slate-800">${w.employerName || '-'}<br>${w.employerPhone || ''}</span>
+          </div>
+          <div>
+            <span class="text-slate-400 block text-[10px]">靠行公司</span>
+            <span class="font-medium text-slate-800">${w.agency || '-'}</span>
+          </div>
+        </div>
+
+        <div class="flex gap-2 pt-2 border-t border-slate-100">
+          ${w.phone ? `
+            <a href="tel:${w.phone}" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white text-center py-2 rounded-lg text-xs font-bold shadow-sm">
+              📞 撥打移工
+            </a>
+          ` : ''}
+          ${w.employerPhone ? `
+            <a href="tel:${w.employerPhone}" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white text-center py-2 rounded-lg text-xs font-bold shadow-sm">
+              📞 撥打雇主
+            </a>
+          ` : ''}
+        </div>
+      `;
+      mobileOverdueList.appendChild(card);
+    }
+        // 手機版外勤大卡片渲染
+      if (mobileCardList) {
+        const card = document.createElement('div');
+        card.className = "bg-white p-4 rounded-xl shadow-sm border border-slate-200 space-y-3";
+        card.innerHTML = `
+          <div class="flex justify-between items-start border-b pb-2">
+            <div>
+              <div class="text-base font-bold text-slate-800">${w.name || '未命名'}</div>
+              <div class="text-xs font-mono text-slate-400">${w.arcNo || w.id || '-'}</div>
+            </div>
+            <span class="px-2 py-0.5 rounded text-xs font-semibold ${w.isPaid ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}">
+              ${w.isPaid ? '已收費' : '待收費'}
+            </span>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2 text-xs text-slate-600">
+            <div>
+              <span class="text-slate-400 block text-[10px]">雇主</span>
+              <span class="font-medium text-slate-700">${w.employerName || '-'}</span>
+            </div>
+            <div>
+              <span class="text-slate-400 block text-[10px]">靠行公司</span>
+              <span class="font-medium text-slate-700">${w.agency || '-'}</span>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-2 pt-1 border-t border-slate-100">
+            ${w.phone ? `
+              <a href="tel:${w.phone}" class="flex-1 bg-emerald-50 text-emerald-700 py-2 rounded-lg text-xs font-bold text-center border border-emerald-200">
+                📞 撥打電話
+              </a>
+            ` : ''}
+            <button onclick="editWorker('${w.id}')" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 py-2 rounded-lg text-xs font-bold text-center">
+              ✏️ 編輯
+            </button>
+            <button onclick="openTransferOutModal('${w.id}')" class="flex-1 bg-amber-50 hover:bg-amber-100 text-amber-700 py-2 rounded-lg text-xs font-bold text-center">
+              🔄 轉出
+            </button>
+          </div>
+        `;
+        mobileCardList.appendChild(card);
+      }
       });
     }
 
