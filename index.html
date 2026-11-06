@@ -22,8 +22,7 @@
       <h2 class="text-lg font-bold text-slate-800">IndoWorker Pro 登入</h2>
       <p class="text-xs text-slate-500 mt-1">請登入管理員帳號以解除雲端安全鎖</p>
     </div>
-    <form onsubmit="handleFirebaseLogin(event)" class="space-y-3 text-xs">
-      <div>
+<form onsubmit="event.preventDefault(); handleFirebaseLogin(event); return false;" class="space-y-3 text-xs"><div>
         <label class="block font-medium mb-1">管理員帳號 (Email)</label>
         <input type="email" id="authEmail" required placeholder="admin@indoworker.com" class="w-full border rounded-lg px-3 py-2 focus:outline-indigo-500">
       </div>
@@ -917,29 +916,59 @@
       }
     });
 
-    // 處理登入表單提交事件
+// 處理登入表單提交事件 (含同裝置免重複登入持久化)
     function handleFirebaseLogin(e) {
-      e.preventDefault();
-      const email = document.getElementById('authEmail').value.trim();
-      const pass = document.getElementById('authPassword').value;
+      if (e) e.preventDefault();
+
+      const emailInput = document.getElementById('authEmail');
+      const passInput = document.getElementById('authPassword');
       const errBox = document.getElementById('loginErrorMsg');
       const btn = document.getElementById('loginBtn');
+
+      const email = emailInput.value.trim();
+      const pass = passInput.value;
+
+      if (!email || !pass) {
+        errBox.innerText = "請輸入完整帳號與密碼！";
+        errBox.classList.remove('hidden');
+        return false;
+      }
 
       errBox.classList.add('hidden');
       btn.innerText = "驗證身分中...";
       btn.disabled = true;
 
-      auth.signInWithEmailAndPassword(email, pass)
+      // 明確設定為 LOCAL：同裝置永久保持登入，下次開啟免輸密碼
+      auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL)
         .then(() => {
-          btn.innerText = "安全登入解鎖";
-          btn.disabled = false;
+          return auth.signInWithEmailAndPassword(email, pass);
         })
-        .catch(err => {
+        .then((userCredential) => {
+          // 登入成功：隱藏遮罩
           btn.innerText = "安全登入解鎖";
           btn.disabled = false;
-          errBox.innerText = "帳號或密碼錯誤，請確認！";
+          const overlay = document.getElementById('loginOverlay');
+          if (overlay) overlay.classList.add('hidden');
+        })
+        .catch((err) => {
+          btn.innerText = "安全登入解鎖";
+          btn.disabled = false;
+          console.error("Firebase 登入失敗原因：", err);
+
+          // 顯示確切錯誤訊息，不再盲目清空
+          if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
+            errBox.innerText = "帳號或密碼錯誤，請重新確認！";
+          } else if (err.code === 'auth/operation-not-allowed') {
+            errBox.innerText = "尚未在 Firebase 後台啟用 Email 登入功能！";
+          } else if (err.code === 'auth/network-request-failed') {
+            errBox.innerText = "網路連線異常，請檢查網路連線！";
+          } else {
+            errBox.innerText = `登入失敗 (${err.code})：${err.message}`;
+          }
           errBox.classList.remove('hidden');
         });
+
+      return false;
     }
 
     // 統一儲存函數：每次新增、編輯、點擊綠點時，同時存到本機並推送到 Firebase
