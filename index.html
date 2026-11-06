@@ -214,7 +214,7 @@
         </table>
       </div>
       <!-- 欠繳追帳手機版卡片容器 -->
-<!-- 欠繳追帳專用手機版容器 -->
+<!-- 欠繳追帳專用手機版容器 (手機顯示 block，電腦隱藏 md:hidden) -->
     <div class="block md:hidden space-y-4 p-2">
       <div>
         <div class="text-xs font-bold text-slate-500 mb-1.5 flex justify-between items-center">
@@ -222,14 +222,13 @@
           <span class="text-[11px] text-slate-400">左右滑動點選</span>
         </div>
         <div id="mobileOverdueSlider" class="flex gap-2.5 overflow-x-auto pb-2 pt-1 no-scrollbar scroll-smooth">
-          <!-- 動態滑動卡片 -->
+          <!-- 橫向滑動藥丸 -->
         </div>
       </div>
       <div id="mobileOverdueDetailCard" class="space-y-3">
-        <!-- 點擊上方後顯示的唯讀大卡片 -->
+        <!-- 點擊後切換的唯讀大卡片 -->
       </div>
     </div>
-  </div>
     <!-- 區塊 3: 待轉出人才池 (Pool) -->
     <div id="sectionPool" class="bg-white rounded-b-xl border border-t-0 border-slate-200 shadow-sm overflow-hidden p-4 space-y-4 hidden">
       <div class="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-900">
@@ -1399,7 +1398,7 @@ if (user) {
       document.getElementById('badgeReturnedCount').innerText = returnedCount;
     }
 
-// ====== 5. 欠費多期清冊專區渲染 (手機滑動 + 依期數排序 + 唯讀卡片) ======
+// ====== 欠費多期清冊專區渲染 (手機滑動 + 依期數排序 + 唯讀卡片) ======
 function renderOverdueTable() {
   const tbody = document.getElementById('overdueTableBody');
   const slider = document.getElementById('mobileOverdueSlider');
@@ -1419,7 +1418,7 @@ function renderOverdueTable() {
     }
   });
 
-  // 依欠費期數由多到少排序（若期數相同則依欠費金額由大到小）
+  // 依欠費期數由多到少排序（若期數相同則依欠費總金額排序）
   overdueWorkers.sort((a, b) => {
     if (b.info.count !== a.info.count) {
       return b.info.count - a.info.count;
@@ -1427,7 +1426,7 @@ function renderOverdueTable() {
     return b.info.totalAmount - a.info.totalAmount;
   });
 
-  // 若目前無人欠費
+  // 若目前完全無欠費
   if (overdueWorkers.length === 0) {
     if (tbody) {
       tbody.innerHTML = `<tr><td colspan="8" class="text-center p-8 text-emerald-600 font-bold text-sm">🎉 太棒了！目前在籍移工完全沒有欠費未收的期數。</td></tr>`;
@@ -1438,11 +1437,13 @@ function renderOverdueTable() {
     return;
   }
 
-  // 電腦版表格橫列渲染
+  // 1. 電腦版表格橫列渲染
   if (tbody) {
     overdueWorkers.forEach(item => {
       const w = item.worker;
       const info = item.info;
+      const monthsDisplay = (info.unpaidMonths || []).map(m => m.rocLabel || m.ym).join(', ');
+      
       const tr = document.createElement('tr');
       tr.className = "hover:bg-slate-50 border-b border-slate-100 transition-colors";
       tr.innerHTML = `
@@ -1452,7 +1453,7 @@ function renderOverdueTable() {
         <td class="p-3 text-slate-600 text-xs">${w.agency || '-'}</td>
         <td class="p-3"><span class="bg-rose-100 text-rose-700 text-xs px-2 py-0.5 rounded-full font-bold">欠 ${info.count} 期</span></td>
         <td class="p-3 font-mono font-bold text-rose-600">NT$ ${info.totalAmount.toLocaleString()}</td>
-        <td class="p-3 text-xs text-slate-500">${info.months.join(', ')}</td>
+        <td class="p-3 text-xs text-slate-500">${monthsDisplay}</td>
         <td class="p-3 text-center">
           <button onclick="editWorker('${w.id}')" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1 rounded">編輯</button>
         </td>
@@ -1461,14 +1462,15 @@ function renderOverdueTable() {
     });
   }
 
-  // 手機版滑動藥丸與唯讀大卡片
+  // 2. 手機版橫向滑動列與詳細卡片渲染
   if (slider && detailContainer) {
     overdueWorkers.forEach((item, index) => {
       const w = item.worker;
       const info = item.info;
 
+      // 建立滑動標籤
       const pill = document.createElement('div');
-      pill.id = `overdue-pill-${w.id}`;
+      pill.id = `overdue-pill-${w.id || index}`;
       pill.className = `flex-shrink-0 cursor-pointer px-3.5 py-2 rounded-xl border text-xs transition-all ${
         index === 0 ? 'bg-rose-50 border-rose-500 shadow-sm' : 'bg-white border-slate-200 text-slate-600'
       }`;
@@ -1477,8 +1479,9 @@ function renderOverdueTable() {
         <div class="text-[10px] text-rose-600 font-semibold mt-0.5">欠 ${info.count} 期 / $${info.totalAmount.toLocaleString()}</div>
       `;
 
+      // 點擊切換選取狀態與卡片內容
       pill.onclick = () => {
-        document.querySelectorAll('[id^="overdue-pill-"]').forEach(el => {
+        slider.querySelectorAll('div[id^="overdue-pill-"]').forEach(el => {
           el.className = 'flex-shrink-0 cursor-pointer px-3.5 py-2 rounded-xl border border-slate-200 bg-white text-slate-600 text-xs transition-all';
         });
         pill.className = 'flex-shrink-0 cursor-pointer px-3.5 py-2 rounded-xl border-2 border-rose-500 bg-rose-50 text-xs shadow-sm transition-all';
@@ -1488,12 +1491,12 @@ function renderOverdueTable() {
       slider.appendChild(pill);
     });
 
-    // 預設顯示欠費期數最多的案件
+    // 預設展開第 1 名（欠最多期案件）
     showOverdueReadOnlyCard(overdueWorkers[0]);
   }
 }
 
-// 唯讀卡片檢視函式
+// 唯讀追帳大卡片渲染函式
 function showOverdueReadOnlyCard(item) {
   const container = document.getElementById('mobileOverdueDetailCard');
   if (!container) return;
@@ -1501,8 +1504,20 @@ function showOverdueReadOnlyCard(item) {
   const w = item.worker;
   const info = item.info;
 
+  // 組合欠費月份明細清單
+  const monthsHtml = (info.unpaidMonths || []).map(m => `
+    <div class="flex justify-between items-center py-1 border-b border-slate-100 last:border-b-0 text-xs">
+      <div>
+        <span class="font-bold text-slate-700">${m.rocLabel || m.ym}</span>
+        <span class="block text-[10px] text-slate-400">${m.detail || ''}</span>
+      </div>
+      <span class="font-mono font-bold text-rose-600">NT$ ${m.amount ? m.amount.toLocaleString() : 0}</span>
+    </div>
+  `).join('');
+
   container.innerHTML = `
     <div class="bg-white rounded-2xl p-4 shadow-sm border border-rose-200 space-y-3.5">
+      <!-- 標題與欠繳標籤 -->
       <div class="flex justify-between items-start border-b border-rose-100 pb-2.5">
         <div>
           <div class="text-lg font-bold text-slate-800">${w.name || '未命名'}</div>
@@ -1513,7 +1528,8 @@ function showOverdueReadOnlyCard(item) {
         </span>
       </div>
 
-      <div class="grid grid-cols-2 gap-2.5 text-xs">
+      <!-- 基本聯絡資訊 (唯讀) -->
+      <div class="grid grid-cols-2 gap-2 text-xs">
         <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-100">
           <span class="text-slate-400 block text-[10px]">雇主姓名</span>
           <span class="font-semibold text-slate-700">${w.employerName || w.employer || '-'}</span>
@@ -1522,29 +1538,29 @@ function showOverdueReadOnlyCard(item) {
           <span class="text-slate-400 block text-[10px]">靠行公司</span>
           <span class="font-semibold text-slate-700">${w.agency || '-'}</span>
         </div>
-        <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-100">
-          <span class="text-slate-400 block text-[10px]">移工電話</span>
-          <span class="font-semibold text-slate-700">${w.phone || '未填寫'}</span>
-        </div>
-        <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-100">
-          <span class="text-slate-400 block text-[10px]">雇主電話</span>
-          <span class="font-semibold text-slate-700">${w.employerPhone || '未填寫'}</span>
-        </div>
       </div>
 
-      <div class="flex gap-2 pt-1">
+      <!-- 外勤一鍵直撥 -->
+      <div class="flex gap-2">
         ${w.phone ? `
           <a href="tel:${w.phone}" class="flex-1 bg-emerald-600 text-white text-center py-2.5 rounded-xl text-xs font-bold shadow-sm">
-            📞 撥給移工
+            📞 撥打移工
           </a>
         ` : ''}
-        ${w.employerPhone ? `
+        ${(w.employerPhone) ? `
           <a href="tel:${w.employerPhone}" class="flex-1 bg-blue-600 text-white text-center py-2.5 rounded-xl text-xs font-bold shadow-sm">
-            📞 撥給雇主
+            📞 撥打雇主
           </a>
         ` : ''}
       </div>
 
+      <!-- 欠繳月份項目明細 -->
+      <div class="bg-slate-50 p-3 rounded-xl border border-slate-100 space-y-1">
+        <div class="text-[11px] font-bold text-slate-500 mb-1">未繳月份與項目明細</div>
+        ${monthsHtml}
+      </div>
+
+      <!-- 限制編輯提示與導向 -->
       <div class="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400">
         <span>🔒 此分頁為追帳唯讀模式</span>
         <button onclick="goToActiveListAndEdit('${w.id}')" class="text-indigo-600 font-semibold underline underline-offset-2">
@@ -1555,7 +1571,7 @@ function showOverdueReadOnlyCard(item) {
   `;
 }
 
-// 快速跳轉至在籍名冊開啟編輯
+// 跳轉到在籍名冊並打開編輯
 function goToActiveListAndEdit(workerId) {
   const activeTabBtn = document.querySelector('[data-tab="active"]') || document.getElementById('tabActive');
   if (activeTabBtn) activeTabBtn.click();
