@@ -214,9 +214,24 @@
         </table>
       </div>
       <!-- 欠繳追帳手機版卡片容器 -->
-<div id="mobileOverdueList" class="block md:hidden space-y-3 p-2"></div>
+<!-- 欠繳追帳手機版專用容器 (手機顯示 block，電腦隱藏 md:hidden) -->
+<div class="block md:hidden space-y-4 p-2">
+  <!-- 1. 橫向滑動移工膠囊/小卡列 -->
+  <div>
+    <div class="text-xs font-bold text-slate-500 mb-1.5 flex justify-between items-center">
+      <span>📌 欠費移工名單 (欠最多期排最前)</span>
+      <span class="text-[11px] text-slate-400">左右滑動切換</span>
     </div>
+    <div id="mobileOverdueSlider" class="flex gap-2.5 overflow-x-auto pb-2 pt-1 no-scrollbar scroll-smooth">
+      <!-- 這裡會由 JS 動態生成橫向滾動小卡 -->
+    </div>
+  </div>
 
+  <!-- 2. 點選後展開的該案件詳細唯讀大卡片 -->
+  <div id="mobileOverdueDetailCard" class="space-y-3">
+    <!-- 點擊上方小卡後會自動切換顯示於此 -->
+  </div>
+</div>
     <!-- 區塊 3: 待轉出人才池 (Pool) -->
     <div id="sectionPool" class="bg-white rounded-b-xl border border-t-0 border-slate-200 shadow-sm overflow-hidden p-4 space-y-4 hidden">
       <div class="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-900">
@@ -1387,32 +1402,90 @@ if (user) {
     }
 
     // ====== 5. 欠費多期清冊專區渲染 ======
-    function renderOverdueTable() {
-      const tbody = document.getElementById('overdueTableBody');
-      tbody.innerHTML = '';
-   const mobileOverdueList = document.getElementById('mobileOverdueList');
-if (mobileOverdueList) mobileOverdueList.innerHTML = '';
-      const activeList = workers.filter(w => (!w.status || w.status === 'ACTIVE'));
-      let overdueWorkers = [];
+   function renderOverdueTable() {
+  const tbody = document.getElementById('overdueTableBody');
+  if (tbody) tbody.innerHTML = '';
 
-      activeList.forEach(w => {
-        const info = getWorkerOverdueInfo(w);
-        if (info.count > 0) {
-          overdueWorkers.push({ worker: w, info: info });
-        }
-      });
+  const slider = document.getElementById('mobileOverdueSlider');
+  const detailContainer = document.getElementById('mobileOverdueDetailCard');
+  if (slider) slider.innerHTML = '';
+  if (detailContainer) detailContainer.innerHTML = '';
 
-      overdueWorkers.sort((a, b) => b.info.totalAmount - a.info.totalAmount);
+  // 1. 篩選在籍且有欠費的移工
+  const activeList = workers.filter(w => (!w.status || w.status === 'ACTIVE'));
+  let overdueWorkers = [];
 
-      if (overdueWorkers.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="8" class="text-center p-8 text-emerald-600 font-bold text-sm">🎉 太棒了！目前在籍移工完全沒有欠費未收的期數。</td></tr>`;
-        if (mobileOverdueList) mobileOverdueList.innerHTML = `<div class="p-6 text-center text-emerald-600 font-bold bg-white rounded-xl shadow-sm border border-emerald-100">🎉 太棒了！目前在籍移工完全沒有欠費未收的期數。</div>`;
-        return;
+  activeList.forEach(w => {
+    const info = getWorkerOverdueInfo(w);
+    if (info && info.count > 0) {
+      overdueWorkers.push({ worker: w, info: info });
+    }
+  });
+
+    // 2. 排序：依欠費期數由多到少（期數相同則依欠費金額由高到低）
+  overdueWorkers.sort((a, b) => {
+    if (b.info.count !== a.info.count) {
+      return b.info.count - a.info.count;
+    }
+    return b.info.totalAmount - a.info.totalAmount;
+  });
+
+    // 若無欠費案件
+  if (overdueWorkers.length === 0) {
+    if (tbody) {
+      tbody.innerHTML = `<tr><td colspan="8" class="text-center p-8 text-emerald-600 font-bold text-sm">🎉 太棒了！目前在籍移工完全沒有欠費未收的期數。</td></tr>`;
+    }
+    if (detailContainer) {
+      detailContainer.innerHTML = `<div class="p-6 text-center text-emerald-600 font-bold bg-white rounded-xl shadow-sm border border-emerald-100">🎉 太棒了！目前在籍移工完全沒有欠費未收的期數。</div>`;
+    }
+    return;
+  }
+
+   // 3. 渲染電腦版表格 (維持原樣)
+  if (tbody) {
+    overdueWorkers.forEach(item => {
+      // 這裡維持原本產生 tr 的程式碼
+      if (typeof renderOverdueRow === "function") {
+        tbody.appendChild(renderOverdueRow(item));
       }
+    });
+  }
 
-      overdueWorkers.forEach(item => {
-        const w = item.worker;
-        const info = item.info;
+  // 4. 渲染手機版橫向滑動列與點擊切換
+  if (slider && detailContainer) {
+    overdueWorkers.forEach((item, index) => {
+      const w = item.worker;
+      const info = item.info;
+
+      // 建立上方橫向滑動小按鈕卡
+      const tabBtn = document.createElement('div');
+      tabBtn.id = `overdue-pill-${w.id}`;
+      tabBtn.className = `flex-shrink-0 cursor-pointer px-3.5 py-2 rounded-xl border text-xs transition-all ${
+        index === 0 
+          ? 'bg-rose-50 border-rose-500 shadow-sm' 
+          : 'bg-white border-slate-200 text-slate-600'
+      }`;
+      tabBtn.innerHTML = `
+        <div class="font-bold text-slate-800">${w.name || '未命名'}</div>
+        <div class="text-[10px] text-rose-600 font-semibold mt-0.5">欠 ${info.count} 期 / $${info.totalAmount.toLocaleString()}</div>
+      `;
+
+      // 點擊事件：切換選中樣式並渲染下方詳細唯讀大卡片
+      tabBtn.onclick = () => {
+        document.querySelectorAll('[id^="overdue-pill-"]').forEach(el => {
+          el.className = 'flex-shrink-0 cursor-pointer px-3.5 py-2 rounded-xl border border-slate-200 bg-white text-slate-600 text-xs transition-all';
+        });
+        tabBtn.className = 'flex-shrink-0 cursor-pointer px-3.5 py-2 rounded-xl border-2 border-rose-500 bg-rose-50 text-xs shadow-sm transition-all';
+        showOverdueReadOnlyCard(item);
+      };
+
+      slider.appendChild(tabBtn);
+    });
+
+    // 預設展開第 1 名（欠最多期者）的詳細卡片
+    showOverdueReadOnlyCard(overdueWorkers[0]);
+  }
+}
 
         let monthsBadges = info.unpaidMonths.map(m => `
           <button onclick="quickPaySingleMonth('${m.ym}', '${w.id}')" title="點擊直接標記已收：${m.detail}" class="bg-rose-50 hover:bg-emerald-100 text-rose-700 hover:text-emerald-800 border border-rose-200 px-1.5 py-0.5 rounded text-[11px] font-medium transition">
@@ -1543,6 +1616,85 @@ if (mobileOverdueList) mobileOverdueList.innerHTML = '';
       billingHistory[ym][workerId].status = '已收';
       saveToStorage();
       renderOverdueTable();
+      // 顯示單一欠費案件的詳細唯讀卡片
+function showOverdueReadOnlyCard(item) {
+  const container = document.getElementById('mobileOverdueDetailCard');
+  if (!container) return;
+
+  const w = item.worker;
+  const info = item.info;
+
+  container.innerHTML = `
+    <div class="bg-white rounded-2xl p-4 shadow-sm border border-rose-200 space-y-3.5">
+      <!-- 標題與欠繳標籤 -->
+      <div class="flex justify-between items-start border-b border-rose-100 pb-2.5">
+        <div>
+          <div class="text-lg font-bold text-slate-800">${w.name || '未命名'}</div>
+          <div class="text-xs font-mono text-slate-400 mt-0.5">編號：${w.id || '-'} / 護照：${w.passportNo || '-'}</div>
+        </div>
+        <span class="bg-rose-600 text-white text-xs font-bold px-2.5 py-1 rounded-full shadow-sm">
+          欠 ${info.count} 期 / NT$ ${info.totalAmount.toLocaleString()}
+        </span>
+      </div>
+
+      <!-- 案件基本資料 (唯讀檢視) -->
+      <div class="grid grid-cols-2 gap-2.5 text-xs">
+        <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-100">
+          <span class="text-slate-400 block text-[10px]">雇主姓名</span>
+          <span class="font-semibold text-slate-700">${w.employerName || w.employer || '-'}</span>
+        </div>
+        <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-100">
+          <span class="text-slate-400 block text-[10px]">靠行公司</span>
+          <span class="font-semibold text-slate-700">${w.agency || '-'}</span>
+        </div>
+        <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-100">
+          <span class="text-slate-400 block text-[10px]">移工電話</span>
+          <span class="font-semibold text-slate-700">${w.phone || '未填寫'}</span>
+        </div>
+        <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-100">
+          <span class="text-slate-400 block text-[10px]">雇主電話</span>
+          <span class="font-semibold text-slate-700">${w.employerPhone || '未填寫'}</span>
+        </div>
+      </div>
+
+      <!-- 外勤一鍵直撥 -->
+      <div class="flex gap-2 pt-1">
+        ${w.phone ? `
+          <a href="tel:${w.phone}" class="flex-1 bg-emerald-600 text-white text-center py-2.5 rounded-xl text-xs font-bold shadow-sm">
+            📞 撥給移工
+          </a>
+        ` : ''}
+        ${(w.employerPhone) ? `
+          <a href="tel:${w.employerPhone}" class="flex-1 bg-blue-600 text-white text-center py-2.5 rounded-xl text-xs font-bold shadow-sm">
+            📞 撥給雇主
+          </a>
+        ` : ''}
+      </div>
+
+      <!-- 編輯限制提示 -->
+      <div class="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400">
+        <span>🔒 此分頁為追帳唯讀模式</span>
+        <button onclick="goToActiveListAndEdit('${w.id}')" class="text-indigo-600 font-semibold underline underline-offset-2">
+          前往在籍名冊編輯 ➜
+        </button>
+      </div>
+    </div>
+  `;
+}
+
+// 快速跳轉至在籍名冊並打開編輯
+function goToActiveListAndEdit(workerId) {
+  // 切換至在籍移工 Tab（依你原本切換 Tab 的按鈕或函式）
+  const activeTabBtn = document.querySelector('[data-tab="active"]') || document.getElementById('tabActive');
+  if (activeTabBtn) activeTabBtn.click();
+  
+  // 延遲一點點打開編輯彈跳視窗
+  setTimeout(() => {
+    if (typeof editWorker === "function") {
+      editWorker(workerId);
+    }
+  }, 150);
+}
       renderActiveTable();
     }
 
