@@ -214,24 +214,22 @@
         </table>
       </div>
       <!-- 欠繳追帳手機版卡片容器 -->
-<!-- 欠繳追帳手機版專用容器 (手機顯示 block，電腦隱藏 md:hidden) -->
-<div class="block md:hidden space-y-4 p-2">
-  <!-- 1. 橫向滑動移工膠囊/小卡列 -->
-  <div>
-    <div class="text-xs font-bold text-slate-500 mb-1.5 flex justify-between items-center">
-      <span>📌 欠費移工名單 (欠最多期排最前)</span>
-      <span class="text-[11px] text-slate-400">左右滑動切換</span>
-    </div>
-    <div id="mobileOverdueSlider" class="flex gap-2.5 overflow-x-auto pb-2 pt-1 no-scrollbar scroll-smooth">
-      <!-- 這裡會由 JS 動態生成橫向滾動小卡 -->
+<!-- 欠繳追帳專用手機版容器 -->
+    <div class="block md:hidden space-y-4 p-2">
+      <div>
+        <div class="text-xs font-bold text-slate-500 mb-1.5 flex justify-between items-center">
+          <span>📌 欠費移工名單 (欠最多期優先)</span>
+          <span class="text-[11px] text-slate-400">左右滑動點選</span>
+        </div>
+        <div id="mobileOverdueSlider" class="flex gap-2.5 overflow-x-auto pb-2 pt-1 no-scrollbar scroll-smooth">
+          <!-- 動態滑動卡片 -->
+        </div>
+      </div>
+      <div id="mobileOverdueDetailCard" class="space-y-3">
+        <!-- 點擊上方後顯示的唯讀大卡片 -->
+      </div>
     </div>
   </div>
-
-  <!-- 2. 點選後展開的該案件詳細唯讀大卡片 -->
-  <div id="mobileOverdueDetailCard" class="space-y-3">
-    <!-- 點擊上方小卡後會自動切換顯示於此 -->
-  </div>
-</div>
     <!-- 區塊 3: 待轉出人才池 (Pool) -->
     <div id="sectionPool" class="bg-white rounded-b-xl border border-t-0 border-slate-200 shadow-sm overflow-hidden p-4 space-y-4 hidden">
       <div class="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-900">
@@ -1401,17 +1399,16 @@ if (user) {
       document.getElementById('badgeReturnedCount').innerText = returnedCount;
     }
 
-    // ====== 5. 欠費多期清冊專區渲染 ======
-   function renderOverdueTable() {
+// ====== 5. 欠費多期清冊專區渲染 (手機滑動 + 依期數排序 + 唯讀卡片) ======
+function renderOverdueTable() {
   const tbody = document.getElementById('overdueTableBody');
-  if (tbody) tbody.innerHTML = '';
-
   const slider = document.getElementById('mobileOverdueSlider');
   const detailContainer = document.getElementById('mobileOverdueDetailCard');
+
+  if (tbody) tbody.innerHTML = '';
   if (slider) slider.innerHTML = '';
   if (detailContainer) detailContainer.innerHTML = '';
 
-  // 1. 篩選在籍且有欠費的移工
   const activeList = workers.filter(w => (!w.status || w.status === 'ACTIVE'));
   let overdueWorkers = [];
 
@@ -1422,7 +1419,7 @@ if (user) {
     }
   });
 
-    // 2. 排序：依欠費期數由多到少（期數相同則依欠費金額由高到低）
+  // 依欠費期數由多到少排序（若期數相同則依欠費金額由大到小）
   overdueWorkers.sort((a, b) => {
     if (b.info.count !== a.info.count) {
       return b.info.count - a.info.count;
@@ -1430,7 +1427,7 @@ if (user) {
     return b.info.totalAmount - a.info.totalAmount;
   });
 
-    // 若無欠費案件
+  // 若目前無人欠費
   if (overdueWorkers.length === 0) {
     if (tbody) {
       tbody.innerHTML = `<tr><td colspan="8" class="text-center p-8 text-emerald-600 font-bold text-sm">🎉 太棒了！目前在籍移工完全沒有欠費未收的期數。</td></tr>`;
@@ -1441,181 +1438,141 @@ if (user) {
     return;
   }
 
-   // 3. 渲染電腦版表格 (維持原樣)
+  // 電腦版表格橫列渲染
   if (tbody) {
     overdueWorkers.forEach(item => {
-      // 這裡維持原本產生 tr 的程式碼
-      if (typeof renderOverdueRow === "function") {
-        tbody.appendChild(renderOverdueRow(item));
-      }
+      const w = item.worker;
+      const info = item.info;
+      const tr = document.createElement('tr');
+      tr.className = "hover:bg-slate-50 border-b border-slate-100 transition-colors";
+      tr.innerHTML = `
+        <td class="p-3 text-slate-400 font-mono text-xs">${w.id || '-'}</td>
+        <td class="p-3 font-medium text-slate-800">${w.name || '-'}</td>
+        <td class="p-3 text-slate-600 text-xs">${w.employerName || w.employer || '-'}</td>
+        <td class="p-3 text-slate-600 text-xs">${w.agency || '-'}</td>
+        <td class="p-3"><span class="bg-rose-100 text-rose-700 text-xs px-2 py-0.5 rounded-full font-bold">欠 ${info.count} 期</span></td>
+        <td class="p-3 font-mono font-bold text-rose-600">NT$ ${info.totalAmount.toLocaleString()}</td>
+        <td class="p-3 text-xs text-slate-500">${info.months.join(', ')}</td>
+        <td class="p-3 text-center">
+          <button onclick="editWorker('${w.id}')" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1 rounded">編輯</button>
+        </td>
+      `;
+      tbody.appendChild(tr);
     });
   }
 
-  // 4. 渲染手機版橫向滑動列與點擊切換
+  // 手機版滑動藥丸與唯讀大卡片
   if (slider && detailContainer) {
     overdueWorkers.forEach((item, index) => {
       const w = item.worker;
       const info = item.info;
 
-      // 建立上方橫向滑動小按鈕卡
-      const tabBtn = document.createElement('div');
-      tabBtn.id = `overdue-pill-${w.id}`;
-      tabBtn.className = `flex-shrink-0 cursor-pointer px-3.5 py-2 rounded-xl border text-xs transition-all ${
-        index === 0 
-          ? 'bg-rose-50 border-rose-500 shadow-sm' 
-          : 'bg-white border-slate-200 text-slate-600'
+      const pill = document.createElement('div');
+      pill.id = `overdue-pill-${w.id}`;
+      pill.className = `flex-shrink-0 cursor-pointer px-3.5 py-2 rounded-xl border text-xs transition-all ${
+        index === 0 ? 'bg-rose-50 border-rose-500 shadow-sm' : 'bg-white border-slate-200 text-slate-600'
       }`;
-      tabBtn.innerHTML = `
+      pill.innerHTML = `
         <div class="font-bold text-slate-800">${w.name || '未命名'}</div>
         <div class="text-[10px] text-rose-600 font-semibold mt-0.5">欠 ${info.count} 期 / $${info.totalAmount.toLocaleString()}</div>
       `;
 
-      // 點擊事件：切換選中樣式並渲染下方詳細唯讀大卡片
-      tabBtn.onclick = () => {
+      pill.onclick = () => {
         document.querySelectorAll('[id^="overdue-pill-"]').forEach(el => {
           el.className = 'flex-shrink-0 cursor-pointer px-3.5 py-2 rounded-xl border border-slate-200 bg-white text-slate-600 text-xs transition-all';
         });
-        tabBtn.className = 'flex-shrink-0 cursor-pointer px-3.5 py-2 rounded-xl border-2 border-rose-500 bg-rose-50 text-xs shadow-sm transition-all';
+        pill.className = 'flex-shrink-0 cursor-pointer px-3.5 py-2 rounded-xl border-2 border-rose-500 bg-rose-50 text-xs shadow-sm transition-all';
         showOverdueReadOnlyCard(item);
       };
 
-      slider.appendChild(tabBtn);
+      slider.appendChild(pill);
     });
 
-    // 預設展開第 1 名（欠最多期者）的詳細卡片
+    // 預設顯示欠費期數最多的案件
     showOverdueReadOnlyCard(overdueWorkers[0]);
   }
 }
 
-        let monthsBadges = info.unpaidMonths.map(m => `
-          <button onclick="quickPaySingleMonth('${m.ym}', '${w.id}')" title="點擊直接標記已收：${m.detail}" class="bg-rose-50 hover:bg-emerald-100 text-rose-700 hover:text-emerald-800 border border-rose-200 px-1.5 py-0.5 rounded text-[11px] font-medium transition">
-            ${m.rocLabel} ($${m.amount.toLocaleString()})
-          </button>
-        `).join('');
+// 唯讀卡片檢視函式
+function showOverdueReadOnlyCard(item) {
+  const container = document.getElementById('mobileOverdueDetailCard');
+  if (!container) return;
 
-        const tr = document.createElement('tr');
-        tr.className = "hover:bg-rose-50/30";
-        tr.innerHTML = `
-          <td class="p-3 font-mono font-bold text-indigo-700 whitespace-nowrap">${w.code}</td>
-          <td class="p-3">
-            <div class="font-bold text-slate-800">${w.name}</div>
-            <div class="text-[10px] text-slate-500 font-mono">🪪 ${w.passportNo || '未填護照號'}</div>
-          </td>
-          <td class="p-3">${getAgencyBadgeHtml(w.agency)}</td>
-          <td class="p-3">
-            <div class="font-medium text-slate-800">${w.employer}</div>
-            <div class="text-slate-500 text-[11px]">${w.phone || '無電話'}</div>
-          </td>
-          <td class="p-3 text-center">
-            <span class="bg-rose-600 text-white font-bold px-2 py-0.5 rounded-full text-xs">${info.count} 個月</span>
-          </td>
-          <td class="p-3 text-right">
-            <span class="text-rose-600 font-bold text-sm">$${info.totalAmount.toLocaleString()}</span>
-          </td>
-          <td class="p-3">
-            <div class="flex flex-wrap gap-1 max-w-md">${monthsBadges}</div>
-          </td>
-          <td class="p-3 text-center">
-            <button onclick="settleAllOverdue('${w.id}')" class="bg-emerald-600 hover:bg-emerald-700 text-white font-medium px-3 py-1.5 rounded shadow-sm text-xs whitespace-nowrap">
-              ✓ 一鍵全收齊
-            </button>
-          </td>
-        `;
-        tbody.appendChild(tr);
-        // 欠繳追帳專用手機卡片
-    if (mobileOverdueList) {
-      const w = item.worker;
-      const info = item.info;
-      const card = document.createElement('div');
-      card.className = "bg-white p-4 rounded-xl shadow-sm border border-rose-200 space-y-2.5";
-      card.innerHTML = `
-        <div class="flex justify-between items-start border-b border-rose-100 pb-2">
-          <div>
-            <div class="text-base font-bold text-slate-800">${w.name || '未命名'}</div>
-            <div class="text-xs font-mono text-slate-400">${w.arcNo || w.id || '-'}</div>
-          </div>
-          <span class="bg-rose-100 text-rose-700 text-xs font-bold px-2.5 py-1 rounded-full">
-            欠 ${info.count} 期 / NT$ ${info.totalAmount.toLocaleString()}
-          </span>
+  const w = item.worker;
+  const info = item.info;
+
+  container.innerHTML = `
+    <div class="bg-white rounded-2xl p-4 shadow-sm border border-rose-200 space-y-3.5">
+      <div class="flex justify-between items-start border-b border-rose-100 pb-2.5">
+        <div>
+          <div class="text-lg font-bold text-slate-800">${w.name || '未命名'}</div>
+          <div class="text-xs font-mono text-slate-400 mt-0.5">編號：${w.id || '-'} / 護照：${w.passportNo || '-'}</div>
         </div>
+        <span class="bg-rose-600 text-white text-xs font-bold px-2.5 py-1 rounded-full shadow-sm">
+          欠 ${info.count} 期 / NT$ ${info.totalAmount.toLocaleString()}
+        </span>
+      </div>
 
-        <div class="grid grid-cols-2 gap-2 text-xs text-slate-600 pt-1">
-          <div>
-            <span class="text-slate-400 block text-[10px]">雇主 / 電話</span>
-            <span class="font-medium text-slate-800">${w.employerName || '-'}<br>${w.employerPhone || ''}</span>
-          </div>
-          <div>
-            <span class="text-slate-400 block text-[10px]">靠行公司</span>
-            <span class="font-medium text-slate-800">${w.agency || '-'}</span>
-          </div>
+      <div class="grid grid-cols-2 gap-2.5 text-xs">
+        <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-100">
+          <span class="text-slate-400 block text-[10px]">雇主姓名</span>
+          <span class="font-semibold text-slate-700">${w.employerName || w.employer || '-'}</span>
         </div>
-
-        <div class="flex gap-2 pt-2 border-t border-slate-100">
-          ${w.phone ? `
-            <a href="tel:${w.phone}" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white text-center py-2 rounded-lg text-xs font-bold shadow-sm">
-              📞 撥打移工
-            </a>
-          ` : ''}
-          ${w.employerPhone ? `
-            <a href="tel:${w.employerPhone}" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white text-center py-2 rounded-lg text-xs font-bold shadow-sm">
-              📞 撥打雇主
-            </a>
-          ` : ''}
+        <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-100">
+          <span class="text-slate-400 block text-[10px]">靠行公司</span>
+          <span class="font-semibold text-slate-700">${w.agency || '-'}</span>
         </div>
-      `;
-      mobileOverdueList.appendChild(card);
-    }
-        // 手機版外勤大卡片渲染
-      if (mobileCardList) {
-        const card = document.createElement('div');
-        card.className = "bg-white p-4 rounded-xl shadow-sm border border-slate-200 space-y-3";
-        card.innerHTML = `
-          <div class="flex justify-between items-start border-b pb-2">
-            <div>
-              <div class="text-base font-bold text-slate-800">${w.name || '未命名'}</div>
-              <div class="text-xs font-mono text-slate-400">${w.arcNo || w.id || '-'}</div>
-            </div>
-            <span class="px-2 py-0.5 rounded text-xs font-semibold ${w.isPaid ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}">
-              ${w.isPaid ? '已收費' : '待收費'}
-            </span>
-          </div>
+        <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-100">
+          <span class="text-slate-400 block text-[10px]">移工電話</span>
+          <span class="font-semibold text-slate-700">${w.phone || '未填寫'}</span>
+        </div>
+        <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-100">
+          <span class="text-slate-400 block text-[10px]">雇主電話</span>
+          <span class="font-semibold text-slate-700">${w.employerPhone || '未填寫'}</span>
+        </div>
+      </div>
 
-          <div class="grid grid-cols-2 gap-2 text-xs text-slate-600">
-            <div>
-              <span class="text-slate-400 block text-[10px]">雇主</span>
-              <span class="font-medium text-slate-700">${w.employerName || '-'}</span>
-            </div>
-            <div>
-              <span class="text-slate-400 block text-[10px]">靠行公司</span>
-              <span class="font-medium text-slate-700">${w.agency || '-'}</span>
-            </div>
-          </div>
+      <div class="flex gap-2 pt-1">
+        ${w.phone ? `
+          <a href="tel:${w.phone}" class="flex-1 bg-emerald-600 text-white text-center py-2.5 rounded-xl text-xs font-bold shadow-sm">
+            📞 撥給移工
+          </a>
+        ` : ''}
+        ${w.employerPhone ? `
+          <a href="tel:${w.employerPhone}" class="flex-1 bg-blue-600 text-white text-center py-2.5 rounded-xl text-xs font-bold shadow-sm">
+            📞 撥給雇主
+          </a>
+        ` : ''}
+      </div>
 
-          <div class="flex items-center gap-2 pt-1 border-t border-slate-100">
-            ${w.phone ? `
-              <a href="tel:${w.phone}" class="flex-1 bg-emerald-50 text-emerald-700 py-2 rounded-lg text-xs font-bold text-center border border-emerald-200">
-                📞 撥打電話
-              </a>
-            ` : ''}
-            <button onclick="editWorker('${w.id}')" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 py-2 rounded-lg text-xs font-bold text-center">
-              ✏️ 編輯
-            </button>
-            <button onclick="openTransferOutModal('${w.id}')" class="flex-1 bg-amber-50 hover:bg-amber-100 text-amber-700 py-2 rounded-lg text-xs font-bold text-center">
-              🔄 轉出
-            </button>
-          </div>
-        `;
-        mobileCardList.appendChild(card);
+      <div class="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400">
+        <span>🔒 此分頁為追帳唯讀模式</span>
+        <button onclick="goToActiveListAndEdit('${w.id}')" class="text-indigo-600 font-semibold underline underline-offset-2">
+          前往在籍名冊編輯 ➜
+        </button>
+      </div>
+    </div>
+  `;
 }
-  });
-    
 
-    function quickPaySingleMonth(ym, workerId) {
-      if (!billingHistory[ym]) billingHistory[ym] = {};
-      if (!billingHistory[ym][workerId]) billingHistory[ym][workerId] = { status: '已收', note: '' };
-      billingHistory[ym][workerId].status = '已收';
-      saveToStorage();
-      renderOverdueTable();
+// 快速跳轉至在籍名冊開啟編輯
+function goToActiveListAndEdit(workerId) {
+  const activeTabBtn = document.querySelector('[data-tab="active"]') || document.getElementById('tabActive');
+  if (activeTabBtn) activeTabBtn.click();
+  setTimeout(() => {
+    if (typeof editWorker === "function") {
+      editWorker(workerId);
+    }
+  }, 150);
+}
+
+// 單月快速結清函式
+function quickPaySingleMonth(ym, workerId) {
+  if (!billingHistory[ym]) billingHistory[ym] = {};
+  billingHistory[ym][workerId] = { status: '已收', note: '', updatedAt: new Date().toISOString() };
+  if (typeof saveToStorage === "function") saveToStorage();
+  renderOverdueTable();
+}
       // 顯示單一欠費案件的詳細唯讀卡片
 function showOverdueReadOnlyCard(item) {
   const container = document.getElementById('mobileOverdueDetailCard');
