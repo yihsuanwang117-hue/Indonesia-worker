@@ -1397,7 +1397,56 @@ if (user) {
       document.getElementById('badgePoolCount').innerText = poolCount;
       document.getElementById('badgeReturnedCount').innerText = returnedCount;
     }
+// 將未繳月份陣列自動分年份歸納，並將連續月份轉為縮寫區間 (如: 114年 - 12月、115年 - 1~11月)
+function formatOverdueMonthsSummary(unpaidMonths) {
+  if (!unpaidMonths || unpaidMonths.length === 0) return '無欠繳月份';
 
+  // 1. 按民國年分組收集月份
+  const groupedByYear = {};
+  unpaidMonths.forEach(m => {
+    // 優先取西元年轉民國年，或從 ym 字串 ("2026-06") 解析
+    let rocYear = m.year ? (m.year - 1911) : null;
+    let monthNum = m.month;
+
+    if (!rocYear && m.ym) {
+      const parts = m.ym.split('-');
+      rocYear = parseInt(parts[0], 10) - 1911;
+      monthNum = parseInt(parts[1], 10);
+    }
+
+    if (!groupedByYear[rocYear]) {
+      groupedByYear[rocYear] = [];
+    }
+    groupedByYear[rocYear].push(monthNum);
+  });
+
+  // 2. 針對每一年做排序並連續合併
+  const resultParts = [];
+  const sortedYears = Object.keys(groupedByYear).map(Number).sort((a, b) => a - b);
+
+  sortedYears.forEach(year => {
+    // 月份由小到大排序並去重
+    const months = [...new Set(groupedByYear[year])].sort((a, b) => a - b);
+    const ranges = [];
+    let start = months[0];
+    let prev = months[0];
+
+    for (let i = 1; i < months.length; i++) {
+      if (months[i] === prev + 1) {
+        prev = months[i];
+      } else {
+        ranges.push(start === prev ? `${start}月` : `${start}~${prev}月`);
+        start = months[i];
+        prev = months[i];
+      }
+    }
+    ranges.push(start === prev ? `${start}月` : `${start}~${prev}月`);
+
+    resultParts.push(`${year}年 - ${ranges.join('、')}`);
+  });
+
+  return resultParts.join('；<br class="hidden md:inline"> ');
+}
 // ====== 欠費多期清冊專區渲染 (手機滑動 + 依期數排序 + 唯讀卡片) ======
 function renderOverdueTable() {
   const tbody = document.getElementById('overdueTableBody');
@@ -1442,7 +1491,7 @@ function renderOverdueTable() {
     overdueWorkers.forEach(item => {
       const w = item.worker;
       const info = item.info;
-      const monthsDisplay = (info.unpaidMonths || []).map(m => m.rocLabel || m.ym).join(', ');
+      const monthsDisplay = (info.unpaidMonths || []).maconst monthsDisplay = formatOverdueMonthsSummary(info.unpaidMonths);p(m => m.rocLabel || m.ym).join(', ');
       
       const tr = document.createElement('tr');
       tr.className = "hover:bg-slate-50 border-b border-slate-100 transition-colors";
@@ -1453,7 +1502,7 @@ function renderOverdueTable() {
         <td class="p-3 text-slate-600 text-xs">${w.agency || '-'}</td>
         <td class="p-3"><span class="bg-rose-100 text-rose-700 text-xs px-2 py-0.5 rounded-full font-bold">欠 ${info.count} 期</span></td>
         <td class="p-3 font-mono font-bold text-rose-600">NT$ ${info.totalAmount.toLocaleString()}</td>
-        <td class="p-3 text-xs text-slate-500">${monthsDisplay}</td>
+       <td class="p-3 text-xs text-slate-700 leading-relaxed">${monthsDisplay}</td>
         <td class="p-3 text-center">
           <button onclick="editWorker('${w.id}')" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1 rounded">編輯</button>
         </td>
@@ -1503,6 +1552,7 @@ function showOverdueReadOnlyCard(item) {
 
   const w = item.worker;
   const info = item.info;
+  const summaryHtml = formatOverdueMonthsSummary(info.unpaidMonths);
 
   // 組合欠費月份明細清單
   const monthsHtml = (info.unpaidMonths || []).map(m => `
@@ -1527,7 +1577,10 @@ function showOverdueReadOnlyCard(item) {
           欠 ${info.count} 期 / NT$ ${info.totalAmount.toLocaleString()}
         </span>
       </div>
-
+      <!-- 欠費期數摘要區間 -->
+      <div class="bg-rose-50 p-2.5 rounded-xl border border-rose-200 text-xs text-rose-800 font-semibold">
+        📅 欠費區間：${summaryHtml}
+      </div>
       <!-- 基本聯絡資訊 (唯讀) -->
       <div class="grid grid-cols-2 gap-2 text-xs">
         <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-100">
