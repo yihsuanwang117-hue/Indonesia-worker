@@ -886,30 +886,27 @@ const firebaseConfig = {
       const overlay = document.getElementById('loginOverlay');
       const statusBadge = document.getElementById('cloudStatus');
       
-      if (user) {
-        // 1. 登入成功：解開全螢幕遮罩
-        if (overlay) overlay.classList.add('hidden');
-        if (statusBadge) {
-          statusBadge.innerHTML = `🟢 雲端已連線 (${user.email})`;
-          statusBadge.className = "text-[10px] bg-emerald-600 px-2 py-0.5 rounded-full text-white font-medium";
-        }
+if (user) {
+      // 1. 登入成功：解開全螢幕遮罩
+      if (overlay) overlay.classList.add('hidden');
+      if (statusBadge) {
+        statusBadge.innerHTML = `🟢 雲端已連線 (${user.email})`;
+        statusBadge.className = "text-[10px] bg-emerald-600 px-2 py-0.5 rounded-full text-white font-medium";
+      }
 
-        // 2. 啟動 Firestore 雲端資料庫即時監聽
-        db.collection("workers_meta").doc("current").onSnapshot(doc => {
-          if (doc.exists) {
-            const data = doc.data();
-            if (data.workers) workers = data.workers;
-            if (data.billingHistory) billingHistory = data.billingHistory;
-            localStorage.setItem('indo_workers_db', JSON.stringify(workers));
-            localStorage.setItem('indo_billing_db', JSON.stringify(billingHistory));
-            if (typeof updateAgencySuggestions === 'function') updateAgencySuggestions();
-            if (typeof updateFilterAgencyOptions === 'function') updateFilterAgencyOptions();
-            if (typeof renderActiveTable === 'function') renderActiveTable();
-            if (typeof renderData === 'function') renderData();
-          }
-        }, err => {
-          console.error("雲端讀取拒絕：", err);
+      // 2. 雲端資料庫即時監聽同步 (電腦與手機雙向秒級同步)
+      db.collection("workers").onSnapshot((snapshot) => {
+        workers = [];
+        snapshot.forEach((doc) => {
+          workers.push({ id: doc.id, ...doc.data() });
         });
+        // 抓到雲端資料後，更新畫面
+        if (typeof renderActiveTable === "function") renderActiveTable();
+        if (typeof renderOverdueTable === "function") renderOverdueTable();
+        if (typeof renderPoolTable === "function") renderPoolTable();
+      }, (error) => {
+        console.error("雲端讀取錯誤:", error);
+      });
       } else {
         // 未登入：鎖定畫面並彈出遮罩
         if (overlay) overlay.classList.remove('hidden');
@@ -2101,19 +2098,17 @@ if (mobileOverdueList) mobileOverdueList.innerHTML = '';
         notes: document.getElementById('wNotes').value.trim(),
       };
 
-      const existingIndex = workers.findIndex(w => w.id === id);
-      if (existingIndex >= 0) {
-        workers[existingIndex] = workerObj;
-      } else {
-        workers.push(workerObj);
-      }
-
-      saveToStorage();
-      updateAgencySuggestions();
-      updateFilterAgencyOptions();
-      closeModal();
-      renderActiveTable();
-    }
+    // 寫入 Firestore 雲端資料庫（電腦與手機雙向同步）
+    db.collection("workers").doc(id).set(workerObj)
+      .then(() => {
+        updateAgencySuggestions();
+        updateFilterAgencyOptions();
+        closeModal();
+      })
+      .catch((error) => {
+        console.error("雲端儲存失敗: ", error);
+        alert("儲存至雲端失敗: " + error.message);
+      });
 
     function editWorker(id) {
       const w = workers.find(item => item.id === id);
